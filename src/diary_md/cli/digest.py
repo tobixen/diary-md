@@ -4,6 +4,7 @@ import json
 import re
 import sys
 from collections import defaultdict
+from pathlib import Path
 
 import click
 
@@ -12,6 +13,30 @@ from diary_md.exchange import get_exchange_rate
 from diary_md.parser import markdown_to_dict, parse_diary_to_list
 
 DATE_FORMAT = "%Y-%m-%d"
+
+# Default config file location
+DEFAULT_CONFIG_FILE = Path.home() / ".config" / "diary-md" / "config.json"
+
+
+def load_config(config_file: Path | None = None) -> dict:
+    """Load configuration from JSON file.
+
+    Config format:
+    {
+        "allowable_subsections": ["Expenses", "Maintenance", ...]
+    }
+    """
+    if config_file is None:
+        config_file = DEFAULT_CONFIG_FILE
+
+    if not config_file.exists():
+        return {}
+
+    try:
+        with open(config_file, encoding='utf-8') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError):
+        return {}
 
 
 @click.group()
@@ -64,32 +89,48 @@ def export_json(ctx):
 
 @digest.command()
 @click.pass_context
-def find_all_subsections(ctx):
-    """Find all subsection titles used in the diary."""
+@click.option('--config', type=click.Path(exists=True, path_type=Path),
+              help=f'Config file (default: {DEFAULT_CONFIG_FILE})')
+def find_all_subsections(ctx, config):
+    """Find all subsection titles used in the diary.
+
+    If a config file defines allowable_subsections, validates against that list.
+    Otherwise, just reports all found subsections.
+    """
     md_dict = ctx.obj['md_dict']
-    allowable_subsection_titles = {
-        '__content__',
-        'Time accounting',
-        'Expenses',
-        'Mistakes and incidents',
-        'Maintenance',
-        'Equipment bought',
-        'Embarkments and disembarkments',
-        'Times and positions'
-    }
+
+    # Load allowable sections from config
+    cfg = load_config(config)
+    allowable_from_config = cfg.get('allowable_subsections', [])
+
+    # Always allow internal keys
+    allowable_subsection_titles = {'__content__', '__file_position__', '__file_name__'}
+    allowable_subsection_titles.update(allowable_from_config)
+
     subsection_titles = set()
     for headline in md_dict:
+        if not isinstance(md_dict[headline], dict):
+            continue
         for day in md_dict[headline]:
-            if day.startswith('__'):
+            if not isinstance(day, str) or day.startswith('__'):
                 continue
-            for subtitle in md_dict[headline][day]:
-                if subtitle.startswith('__'):
+            day_data = md_dict[headline][day]
+            if not isinstance(day_data, dict):
+                continue
+            for subtitle in day_data:
+                if not isinstance(subtitle, str) or subtitle.startswith('__'):
                     continue
                 subsection_titles.add(subtitle)
-                if subtitle not in allowable_subsection_titles:
+                if allowable_from_config and subtitle not in allowable_subsection_titles:
                     click.echo(f"Not allowed: {subtitle} in {headline}->{day}")
-    click.echo(f"Allowable, but missing: {allowable_subsection_titles - subsection_titles!r}")
-    click.echo(f"Not allowable, but found: {subsection_titles - allowable_subsection_titles!r}")
+
+    if allowable_from_config:
+        user_allowable = set(allowable_from_config)
+        click.echo(f"Allowable, but missing: {user_allowable - subsection_titles!r}")
+        click.echo(f"Not allowable, but found: {subsection_titles - user_allowable!r}")
+    else:
+        click.echo(f"Found subsections: {subsection_titles!r}")
+        click.echo(f"(No config file found at {DEFAULT_CONFIG_FILE} - showing all found sections)")
 
 
 @digest.command()

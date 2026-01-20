@@ -28,7 +28,14 @@ Every file has one or more top-level headlines.  Think of it as a chapter title 
 
 > After sleeping a bit (a bit more than planned), we decided go back to Cavtat for a final visit to Croatian civilisation - throwing garbage and such - and then we headed out into the Adriatic - first tack going like 90 degrees out from the coast.  Wind direction changed a bit and wanted to push us north, so we tacked.
 
-* After that, multiple 3rd level sections may follow.  They follow a pattern, the same 3rd-level sections may appear on any day.  For the Captain's Log I have one section for maintenance, another for expenses, sometimes I have "Meters and measurements" (manual readings of various meters) and "Times and positions" (automatically added based on my tracking scripts)
+* After that, multiple 3rd level sections may follow - but they should be in a set of allowed 3rd level sections.  For `diary-202401.md`, the set looks like this: 
+  * Maintenance
+  * Times and positions
+  * Expenses
+  * Embarkments and disembarkments
+  * Plans
+  * Time tracking
+  * Meters and measurements
 
 ## Other thoughts on how to arrange the diary
 

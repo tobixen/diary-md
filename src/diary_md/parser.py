@@ -2,6 +2,7 @@
 
 import re
 from datetime import datetime
+from io import StringIO
 from pathlib import Path
 from typing import TextIO
 
@@ -28,6 +29,13 @@ def markdown_to_dict(file: TextIO, level: int = 1) -> dict:
     Returns:
         Nested dict structure representing the markdown hierarchy
     """
+    # Handle non-seekable streams (like piped stdin) by reading into memory
+    if not file.seekable():
+        file_name = getattr(file, 'name', '<stream>')
+        content = file.read()
+        file = StringIO(content)
+        file.name = file_name  # Preserve original name
+
     ret_dict: dict = {}
     content = ""
 
