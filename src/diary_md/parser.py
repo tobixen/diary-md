@@ -66,12 +66,12 @@ def markdown_to_dict(file: TextIO, level: int = 1) -> dict:
             section_name = line[header_level:].strip()
             ret_dict[section_name] = markdown_to_dict(file, header_level + 1)
             ret_dict[section_name]['__file_position__'] = file.tell()
-            ret_dict[section_name]['__file_name__'] = file.name
+            ret_dict[section_name]['__file_name__'] = getattr(file, 'name', '<stream>')
         else:
             raise DiaryParseError(
                 f"Invalid header level jump: expected level {level} ({'#'*level}), "
                 f"got level {header_level} ({'#'*header_level})",
-                file_name=file.name,
+                file_name=getattr(file, 'name', '<stream>'),
                 file_position=file_position,
                 section=line.strip(),
                 content=line
@@ -93,13 +93,14 @@ def find_or_create_date_section(content: str, target_date: datetime) -> tuple[in
     date_header = f"## {target_date.strftime('%A %Y-%m-%d')}"
     lines = content.split("\n")
 
-    # Check if date already exists
+    # Check if date already exists (may have itinerary after date)
     for i, line in enumerate(lines):
-        if line.strip() == date_header:
+        if line.strip().startswith(date_header):
             return i, True
 
     # Find insertion point (chronological order)
-    date_pattern = re.compile(r"^## \w+ (\d{4}-\d{2}-\d{2})$")
+    # Pattern allows optional itinerary after date
+    date_pattern = re.compile(r"^## \w+ (\d{4}-\d{2}-\d{2})")
 
     for i, line in enumerate(lines):
         match = date_pattern.match(line.strip())

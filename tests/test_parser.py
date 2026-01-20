@@ -92,7 +92,7 @@ class TestFindOrCreateDateSection:
         content = """\
 # Trip
 
-## Monday 2026-01-20
+## Tuesday 2026-01-20
 
 Content
 """
@@ -129,7 +129,7 @@ Content
 """
         line_num, exists = find_or_create_date_section(content, datetime(2026, 1, 25))
         assert exists is False
-        assert line_num == 5  # At end
+        assert line_num == 6  # At end (content has 6 lines including trailing newline)
 
 
 class TestFindSectionInDate:
