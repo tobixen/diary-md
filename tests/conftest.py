@@ -11,7 +11,7 @@ def sample_diary_content():
     return """\
 # Summer Trip 2026
 
-## Monday 2026-01-20 - Oslo - Bergen
+## Tuesday 2026-01-20 - Oslo - Bergen
 
 Some notes about the day.
 
@@ -25,7 +25,7 @@ Some notes about the day.
 
 Fixed the rudder bearing.
 
-## Tuesday 2026-01-21 - Bergen
+## Wednesday 2026-01-21 - Bergen
 
 Another day in Bergen.
 
@@ -36,7 +36,7 @@ Another day in Bergen.
 
 # Winter Trip 2026
 
-## Wednesday 2026-01-22 - Trondheim
+## Thursday 2026-01-22 - Trondheim
 
 ### Expenses
 
