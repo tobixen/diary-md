@@ -2,7 +2,7 @@
 
 import pytest
 
-from diary_md.exchange import get_exchange_rate, convert_to_eur, EXCHANGE_RATES_TO_EUR
+from diary_md.exchange import convert_to_eur, get_exchange_rate
 
 
 class TestGetExchangeRate:

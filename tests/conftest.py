@@ -1,8 +1,8 @@
 """Pytest fixtures for diary-md tests."""
 
-import pytest
 from io import StringIO
-from pathlib import Path
+
+import pytest
 
 
 @pytest.fixture

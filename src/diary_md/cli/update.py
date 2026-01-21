@@ -7,7 +7,7 @@ from pathlib import Path
 import click
 
 from diary_md.git import git_commit, git_push
-from diary_md.parser import find_or_create_date_section, find_section_in_date, find_section_end
+from diary_md.parser import find_or_create_date_section, find_section_end, find_section_in_date
 
 
 def get_diary_file() -> Path:
@@ -93,8 +93,8 @@ def update_diary(
         click.echo(f"Line: {line}")
         click.echo()
         # Show context
-        for i, l in enumerate(lines):
-            if line in l or format_date_header(target_date) in l:
+        for i, current_line in enumerate(lines):
+            if line in current_line or format_date_header(target_date) in current_line:
                 start = max(0, i - 2)
                 end = min(len(lines), i + 3)
                 click.echo("Context:")
@@ -195,8 +195,8 @@ def update(section, date, line, amount, currency, expense_type, description, com
     # Parse date
     try:
         target_date = datetime.strptime(date, "%Y-%m-%d")
-    except ValueError:
-        raise click.BadParameter(f"Invalid date format: {date} (expected YYYY-MM-DD)")
+    except ValueError as e:
+        raise click.BadParameter(f"Invalid date format: {date} (expected YYYY-MM-DD)") from e
 
     diary_file = get_diary_file()
 

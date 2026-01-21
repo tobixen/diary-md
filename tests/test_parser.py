@@ -5,15 +5,14 @@ from io import StringIO
 
 import pytest
 
+from diary_md.exceptions import DiaryParseError
 from diary_md.parser import (
-    markdown_to_dict,
     find_or_create_date_section,
-    find_section_in_date,
     find_section_end,
-    parse_diary_to_list,
+    find_section_in_date,
+    markdown_to_dict,
     parse_diary_expenses,
 )
-from diary_md.exceptions import DiaryParseError
 
 
 class TestMarkdownToDict:

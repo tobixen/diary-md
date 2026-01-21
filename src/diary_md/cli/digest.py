@@ -1,5 +1,6 @@
 """diary-digest: Analyze and extract information from diary files."""
 
+import fnmatch
 import json
 import re
 import sys
@@ -21,9 +22,22 @@ DEFAULT_CONFIG_FILE = Path.home() / ".config" / "diary-md" / "config.json"
 def load_config(config_file: Path | None = None) -> dict:
     """Load configuration from JSON file.
 
-    Config format:
+    Config format (simple):
     {
         "allowable_subsections": ["Expenses", "Maintenance", ...]
+    }
+
+    Config format (with diary-specific patterns):
+    {
+        "diary_configs": {
+            "**/solveig/*": {
+                "allowable_subsections": ["Expenses", "Maintenance", ...]
+            },
+            "**/furusetalle9/*": {
+                "allowable_subsections": ["Kostnader", "Tidsbruk", ...]
+            }
+        },
+        "allowable_subsections": ["default", "sections", "..."]
     }
     """
     if config_file is None:
@@ -35,8 +49,24 @@ def load_config(config_file: Path | None = None) -> dict:
     try:
         with open(config_file, encoding='utf-8') as f:
             return json.load(f)
-    except (json.JSONDecodeError, IOError):
+    except (OSError, json.JSONDecodeError):
         return {}
+
+
+def get_config_for_diary(cfg: dict, diary_path: str) -> dict:
+    """Get the configuration for a specific diary file.
+
+    Matches diary path against patterns in diary_configs.
+    Falls back to top-level config if no pattern matches.
+    """
+    diary_configs = cfg.get('diary_configs', {})
+
+    for pattern, diary_cfg in diary_configs.items():
+        if fnmatch.fnmatch(diary_path, pattern):
+            return diary_cfg
+
+    # Return top-level config as default
+    return cfg
 
 
 @click.group()
@@ -53,8 +83,12 @@ def digest(ctx, diary, start, end):
     """Analyze and extract information from markdown diary files."""
     ctx.ensure_object(dict)
     ctx.obj['md_dict'] = {}
+    ctx.obj['diary_paths'] = []
     for d in diary:
         ctx.obj['md_dict'].update(markdown_to_dict(d))
+        # Track diary paths for config lookup
+        if hasattr(d, 'name') and d.name != '<stdin>':
+            ctx.obj['diary_paths'].append(d.name)
     ctx.obj['diary_list'] = parse_diary_to_list(ctx.obj['md_dict'], start=start, end=end)
 
 
@@ -96,25 +130,45 @@ def find_all_subsections(ctx, config):
 
     If a config file defines allowable_subsections, validates against that list.
     Otherwise, just reports all found subsections.
+
+    Supports diary-specific configs with glob patterns in diary_configs section.
     """
     md_dict = ctx.obj['md_dict']
+    diary_paths = ctx.obj.get('diary_paths', [])
 
-    # Load allowable sections from config
+    # Load config and get diary-specific settings
     cfg = load_config(config)
-    allowable_from_config = cfg.get('allowable_subsections', [])
+
+    # If we have diary paths, try to get diary-specific config
+    allowable_from_config = []
+    if diary_paths:
+        # Use first diary's config (could be enhanced to merge configs)
+        diary_cfg = get_config_for_diary(cfg, diary_paths[0])
+        allowable_from_config = diary_cfg.get('allowable_subsections', [])
+    else:
+        allowable_from_config = cfg.get('allowable_subsections', [])
 
     # Always allow internal keys
     allowable_subsection_titles = {'__content__', '__file_position__', '__file_name__'}
     allowable_subsection_titles.update(allowable_from_config)
 
     subsection_titles = set()
-    for headline in md_dict:
-        if not isinstance(md_dict[headline], dict):
-            continue
-        for day in md_dict[headline]:
+
+    def _looks_like_date(key: str) -> bool:
+        """Check if key looks like a date header."""
+        import re
+        return bool(re.match(r'^[A-Za-zæøåÆØÅ]+ 20\d\d-\d\d-\d\d', key))
+
+    # Check if top-level keys are date headers (no trip wrapper)
+    non_meta_keys = [k for k in md_dict if not k.startswith('__')]
+    direct_dates = non_meta_keys and all(_looks_like_date(k) for k in non_meta_keys)
+
+    if direct_dates:
+        # Top-level is date headers directly
+        for day in md_dict:
             if not isinstance(day, str) or day.startswith('__'):
                 continue
-            day_data = md_dict[headline][day]
+            day_data = md_dict[day]
             if not isinstance(day_data, dict):
                 continue
             for subtitle in day_data:
@@ -122,7 +176,24 @@ def find_all_subsections(ctx, config):
                     continue
                 subsection_titles.add(subtitle)
                 if allowable_from_config and subtitle not in allowable_subsection_titles:
-                    click.echo(f"Not allowed: {subtitle} in {headline}->{day}")
+                    click.echo(f"Not allowed: {subtitle} in {day}")
+    else:
+        # Normal structure: trip headers containing date headers
+        for headline in md_dict:
+            if not isinstance(md_dict[headline], dict):
+                continue
+            for day in md_dict[headline]:
+                if not isinstance(day, str) or day.startswith('__'):
+                    continue
+                day_data = md_dict[headline][day]
+                if not isinstance(day_data, dict):
+                    continue
+                for subtitle in day_data:
+                    if not isinstance(subtitle, str) or subtitle.startswith('__'):
+                        continue
+                    subsection_titles.add(subtitle)
+                    if allowable_from_config and subtitle not in allowable_subsection_titles:
+                        click.echo(f"Not allowed: {subtitle} in {headline}->{day}")
 
     if allowable_from_config:
         user_allowable = set(allowable_from_config)

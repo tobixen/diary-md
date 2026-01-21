@@ -1,14 +1,14 @@
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
 
 [project]
 name = "diary-md"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Tools for managing markdown-based diary entries"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "AGPL-3.0-or-later"}
+license = "AGPL-3.0-or-later"
 authors = [
     {name = "Tobias Brox", email = "tobias@redpill-linpro.com"}
 ]
@@ -20,6 +20,8 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
     "click>=8.0",
@@ -27,8 +29,10 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0",
+    "pytest>=8.0",
     "pytest-cov",
+    "ruff>=0.14",
+    "pre-commit>=4.0",
 ]
 
 [project.scripts]
@@ -36,8 +40,31 @@ diary-digest = "diary_md.cli.digest:main"
 diary-update = "diary_md.cli.update:main"
 diary-reconcile = "diary_md.cli.reconcile:main"
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[project.urls]
+Repository = "https://github.com/tobixen/diary-md"
+Issues = "https://github.com/tobixen/diary-md/issues"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/diary_md/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/diary_md"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "PT"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["diary_md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+python_files = ["test_*.py"]
+filterwarnings = ["error"]

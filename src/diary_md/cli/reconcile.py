@@ -79,7 +79,7 @@ def load_aliases(filepath: Path | None) -> dict[str, set[str]]:
                 alias_lower = alias.lower()
                 aliases.setdefault(alias_lower, set()).add(canonical_lower)
 
-    except (json.JSONDecodeError, IOError) as e:
+    except (OSError, json.JSONDecodeError) as e:
         click.echo(f"Warning: Could not load aliases from {filepath}: {e}", err=True)
 
     return aliases
@@ -212,8 +212,8 @@ def parse_wise_csv(filepath: Path, default_currency: str = 'EUR') -> list[Expens
 
 def parse_banknorwegian_xlsx(filepath: Path) -> list[Expense]:
     """Parse Bank Norwegian XLSX export file."""
-    import zipfile
     import xml.etree.ElementTree as ET
+    import zipfile
 
     expenses = []
     excel_epoch = datetime(1899, 12, 30)
@@ -244,7 +244,7 @@ def parse_banknorwegian_xlsx(filepath: Path) -> list[Expense]:
                     try:
                         cells = {c.attrib.get('r', '')[0]: c for c in row.findall('x:c', ns)}
 
-                        def get_value(col: str) -> str:
+                        def get_value(col: str, cells=cells) -> str:
                             cell = cells.get(col)
                             if cell is None:
                                 return ''
@@ -301,7 +301,7 @@ def parse_banknorwegian_xlsx(filepath: Path) -> list[Expense]:
                         ))
                     except (ValueError, KeyError, IndexError):
                         continue
-    except (zipfile.BadZipFile, IOError) as e:
+    except (OSError, zipfile.BadZipFile) as e:
         click.echo(f"Error reading {filepath}: {e}", err=True)
 
     return expenses
@@ -380,7 +380,7 @@ def parse_remember_json(filepath: Path) -> list[Expense]:
                 except (ValueError, KeyError, TypeError):
                     continue
 
-        except (json.JSONDecodeError, IOError) as e:
+        except (OSError, json.JSONDecodeError) as e:
             click.echo(f"Error reading {json_file}: {e}", err=True)
 
     return expenses
@@ -402,7 +402,7 @@ def get_reconciled_markers(filepath: Path) -> set[tuple]:
                 for match in marker_pattern.finditer(line):
                     bank, date, currency, amount = match.groups()
                     markers.add((bank, date, currency, f"{float(amount):.2f}"))
-    except IOError:
+    except OSError:
         pass
 
     return markers
@@ -673,7 +673,7 @@ def load_existing_non_reconciled(filepath: Path) -> tuple[set[tuple], list[dict]
 
                 if date.startswith('#'):
                     commented_rows.append(row)
-    except (IOError, csv.Error) as e:
+    except (OSError, csv.Error) as e:
         click.echo(f"Warning: Could not read {filepath}: {e}", err=True)
 
     return existing, commented_rows
@@ -895,7 +895,7 @@ def reconcile(input_file, fmt, diary, output, currency, tolerance, date_toleranc
     if already_reconciled and verbose:
         click.echo(f"Skipped {already_reconciled} already-reconciled entries")
 
-    click.echo(f"\n=== Results ===")
+    click.echo("\n=== Results ===")
     if already_reconciled:
         click.echo(f"Already reconciled: {already_reconciled}")
     click.echo(f"Matched: {len(matched)}")
@@ -903,7 +903,7 @@ def reconcile(input_file, fmt, diary, output, currency, tolerance, date_toleranc
 
     if verbose or dry_run:
         if matched:
-            click.echo(f"\n--- Matched expenses ---")
+            click.echo("\n--- Matched expenses ---")
             for expense, diary_exp in matched:
                 click.echo(f"  {expense.date.strftime('%Y-%m-%d')} {expense.currency} {expense.amount:.2f} "
                            f"'{expense.description}'")
@@ -911,7 +911,7 @@ def reconcile(input_file, fmt, diary, output, currency, tolerance, date_toleranc
                            f"- {diary_exp.expense_type} - {diary_exp.description}")
 
         if unmatched:
-            click.echo(f"\n--- Unmatched expenses (need manual review) ---")
+            click.echo("\n--- Unmatched expenses (need manual review) ---")
             for expense in unmatched:
                 click.echo(f"  {expense.date.strftime('%Y-%m-%d')} {expense.currency} {expense.amount:.2f} "
                            f"'{expense.description}'")
@@ -939,7 +939,7 @@ def reconcile(input_file, fmt, diary, output, currency, tolerance, date_toleranc
                 click.echo(f"  Would remove {removed} entries (now matched)")
             if duplicates:
                 click.echo(f"  Would skip {duplicates} duplicates")
-        click.echo(f"\n(Dry run - no files modified)")
+        click.echo("\n(Dry run - no files modified)")
     else:
         if added or removed:
             click.echo(f"\nUpdated {output}:")

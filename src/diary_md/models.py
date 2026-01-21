@@ -4,13 +4,16 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 
-
 DATE_FORMAT = "%Y-%m-%d"
 
 # Valid weekday names (English and Norwegian)
 WEEKDAYS_EN = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')
 WEEKDAYS_NO = ('Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag')
 VALID_WEEKDAYS = WEEKDAYS_EN + WEEKDAYS_NO
+
+# Mapping from weekday name to day-of-week index (Monday=0, Sunday=6)
+WEEKDAY_TO_INDEX = {day: i for i, day in enumerate(WEEKDAYS_EN)}
+WEEKDAY_TO_INDEX.update({day: i for i, day in enumerate(WEEKDAYS_NO)})
 
 # Supported currencies
 SUPPORTED_CURRENCIES = (

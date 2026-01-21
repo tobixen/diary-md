@@ -2,8 +2,6 @@
 
 from datetime import datetime
 
-import pytest
-
 from diary_md.models import DateHeader, ExpenseLine
 
 

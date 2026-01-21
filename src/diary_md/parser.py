@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import TextIO
 
 from diary_md.exceptions import DiaryParseError
-from diary_md.models import DateHeader, ExpenseLine, DATE_FORMAT, VALID_WEEKDAYS
+from diary_md.models import DATE_FORMAT, VALID_WEEKDAYS, WEEKDAY_TO_INDEX, WEEKDAYS_EN, ExpenseLine
 
 
 def markdown_to_dict(file: TextIO, level: int = 1) -> dict:
@@ -163,6 +163,11 @@ def find_section_end(lines: list[str], section_line: int) -> int:
     return len(lines)
 
 
+def _looks_like_date_header(key: str) -> bool:
+    """Check if a key looks like a date header (Weekday YYYY-MM-DD)."""
+    return bool(re.match(r'^[A-Za-zæøåÆØÅ]+ 20\d\d-\d\d-\d\d', key))
+
+
 def parse_diary_to_list(
     md_dict: dict,
     start: datetime | None = None,
@@ -179,12 +184,23 @@ def parse_diary_to_list(
         List of entry dicts, sorted by date
     """
     ret_list = []
-    for header in md_dict:
-        if header.startswith('__'):
-            continue
-        defaults = {'trip': header}
-        entries = _parse_subdict_to_list(md_dict[header], defaults, start, end)
+
+    # Check if top-level keys are date headers (no trip wrapper)
+    non_meta_keys = [k for k in md_dict if not k.startswith('__')]
+    if non_meta_keys and all(_looks_like_date_header(k) for k in non_meta_keys):
+        # Direct date headers at top level - wrap in synthetic trip
+        defaults = {'trip': '__default__'}
+        entries = _parse_subdict_to_list(md_dict, defaults, start, end)
         ret_list.extend(entries)
+    else:
+        # Normal structure: trip headers containing date headers
+        for header in md_dict:
+            if header.startswith('__'):
+                continue
+            defaults = {'trip': header}
+            entries = _parse_subdict_to_list(md_dict[header], defaults, start, end)
+            ret_list.extend(entries)
+
     return ret_list
 
 
@@ -231,11 +247,14 @@ def _parse_subdict_to_list(
 
         dt = datetime.strptime(date_str, DATE_FORMAT)
 
-        # Check weekday matches date
-        if dt.strftime('%A') != dow:
+        # Check weekday matches date (compare by index to support multiple languages)
+        expected_index = dt.weekday()  # Monday=0, Sunday=6
+        actual_index = WEEKDAY_TO_INDEX.get(dow)
+        if actual_index != expected_index:
+            expected_name = WEEKDAYS_EN[expected_index]
             raise DiaryParseError(
                 f"Weekday mismatch: '{dow}' is not the correct day for {date_str} "
-                f"(should be {dt.strftime('%A')})",
+                f"(should be {expected_name})",
                 file_name=input_dict[day].get('__file_name__'),
                 file_position=input_dict[day].get('__file_position__'),
                 section=day,
