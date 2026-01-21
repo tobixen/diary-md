@@ -1,5 +1,7 @@
 """Tests for diary_md.cli.digest module."""
 
+import json
+
 from click.testing import CliRunner
 
 from diary_md.cli.digest import digest
@@ -43,10 +45,19 @@ class TestDigestExpenses:
 class TestDigestFindAllSubsections:
     """Tests for diary-digest find-all-subsections command."""
 
-    def test_find_all_subsections(self, sample_diary_file):
+    def test_find_all_subsections(self, sample_diary_file, tmp_path):
         """Find all subsection titles in diary."""
+        # Create a config file with allowable_subsections
+        config_file = tmp_path / "config.json"
+        config_file.write_text(json.dumps({
+            "allowable_subsections": ["Expenses", "Notes", "Weather"]
+        }))
+
         runner = CliRunner()
-        result = runner.invoke(digest, ['--diary', str(sample_diary_file), 'find-all-subsections'])
+        result = runner.invoke(digest, [
+            '--diary', str(sample_diary_file),
+            'find-all-subsections', '--config', str(config_file)
+        ])
 
         assert result.exit_code == 0
         assert 'Allowable, but missing' in result.output
@@ -66,8 +77,17 @@ Some content here.
         diary_file = tmp_path / "diary.md"
         diary_file.write_text(diary_content)
 
+        # Create a config file that doesn't allow "Custom Section"
+        config_file = tmp_path / "config.json"
+        config_file.write_text(json.dumps({
+            "allowable_subsections": ["Expenses", "Notes"]
+        }))
+
         runner = CliRunner()
-        result = runner.invoke(digest, ['--diary', str(diary_file), 'find-all-subsections'])
+        result = runner.invoke(digest, [
+            '--diary', str(diary_file),
+            'find-all-subsections', '--config', str(config_file)
+        ])
 
         assert result.exit_code == 0
         assert 'Not allowed: Custom Section' in result.output
