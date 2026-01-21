@@ -60,3 +60,6 @@ venv.bak/
 
 # OS
 .DS_Store
+
+# Auto-generated version file
+_version.py
