@@ -117,8 +117,122 @@ def select_subsection(ctx, section):
 @digest.command()
 @click.pass_context
 def export_json(ctx):
-    """Export diary as JSON."""
+    """Export diary as JSON (list format)."""
     click.echo(json.dumps(ctx.obj['diary_list']))
+
+
+@digest.command()
+@click.pass_context
+@click.option('--pretty', is_flag=True, help='Pretty-print JSON output')
+def export_web_json(ctx, pretty):
+    """Export diary as JSON for web viewer.
+
+    Outputs JSON in the format expected by diary-viewer.html with
+    hierarchical trip/date/section structure.
+    """
+    md_dict = ctx.obj['md_dict']
+
+    # Helper function to check if a key looks like a date header
+    def looks_like_date(key):
+        import re
+        return bool(re.match(r'^[A-Za-zæøåÆØÅ]+ 20\d\d-\d\d-\d\d', key))
+
+    # Parse structure into trips
+    trips = []
+
+    # Check if top-level keys are date headers (no trip wrapper)
+    non_meta_keys = [k for k in md_dict if not k.startswith('__')]
+    direct_dates = non_meta_keys and all(looks_like_date(k) for k in non_meta_keys)
+
+    if direct_dates:
+        # Top-level is date headers directly - create single trip
+        trip = {
+            "title": "Diary",
+            "dates": []
+        }
+
+        for day_header in md_dict:
+            if day_header.startswith('__'):
+                continue
+
+            # Extract date from header (e.g., "Tuesday 2026-01-21" -> "2026-01-21")
+            import re
+            date_match = re.search(r'20\d\d-\d\d-\d\d', day_header)
+            date_str = date_match.group(0) if date_match else ""
+
+            day_data = md_dict[day_header]
+            if not isinstance(day_data, dict):
+                continue
+
+            # Build sections dict
+            sections = {}
+            for section_name in day_data:
+                if section_name.startswith('__'):
+                    continue
+                sections[section_name] = day_data[section_name].get('__content__', '')
+
+            if sections:
+                trip["dates"].append({
+                    "date": date_str,
+                    "dateString": day_header,
+                    "sections": sections
+                })
+
+        if trip["dates"]:
+            trips.append(trip)
+
+    else:
+        # Normal structure: trip headers containing date headers
+        for trip_header in md_dict:
+            if trip_header.startswith('__'):
+                continue
+
+            trip = {
+                "title": trip_header,
+                "dates": []
+            }
+
+            trip_data = md_dict[trip_header]
+            if not isinstance(trip_data, dict):
+                continue
+
+            for day_header in trip_data:
+                if day_header.startswith('__'):
+                    continue
+
+                # Extract date from header
+                import re
+                date_match = re.search(r'20\d\d-\d\d-\d\d', day_header)
+                date_str = date_match.group(0) if date_match else ""
+
+                day_data = trip_data[day_header]
+                if not isinstance(day_data, dict):
+                    continue
+
+                # Build sections dict
+                sections = {}
+                for section_name in day_data:
+                    if section_name.startswith('__'):
+                        continue
+                    sections[section_name] = day_data[section_name].get('__content__', '')
+
+                if sections:
+                    trip["dates"].append({
+                        "date": date_str,
+                        "dateString": day_header,
+                        "sections": sections
+                    })
+
+            if trip["dates"]:
+                trips.append(trip)
+
+    # Build final output
+    output = {"trips": trips}
+
+    if pretty:
+        click.echo(json.dumps(output, indent=2, ensure_ascii=False))
+    else:
+        click.echo(json.dumps(output, ensure_ascii=False))
 
 
 @digest.command()
