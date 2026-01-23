@@ -8,6 +8,7 @@ from diary_md.parser import (
     find_section_end,
     find_section_in_date,
     markdown_to_dict,
+    markdown_to_dict_v2,
 )
 
 __version__ = "0.1.0"
@@ -19,6 +20,7 @@ __all__ = [
     "get_exchange_rate",
     "EXCHANGE_RATES_TO_EUR",
     "markdown_to_dict",
+    "markdown_to_dict_v2",
     "find_or_create_date_section",
     "find_section_in_date",
     "find_section_end",

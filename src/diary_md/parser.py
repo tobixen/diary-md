@@ -88,6 +88,79 @@ def markdown_to_dict(file: TextIO, level: int = 1) -> dict:
     return ret_dict
 
 
+def markdown_to_dict_v2(file: TextIO, level: int = 1) -> dict:
+    """Parse a markdown file into a hierarchical dict structure using markdown-it-py.
+
+    This is a refactored version that uses the markdown-it-py library for parsing.
+    It maintains backward compatibility with the original markdown_to_dict output format.
+
+    Takes a markdown file, finds all section headers and subsection headers.
+    Creates a hierarchical dict structure where section headers are keys
+    and values are dicts containing subsection headers, etc.
+
+    Special keys:
+        __content__: Text content within a section (paragraphs + list items)
+        __paragraphs__: List of paragraph strings (new in v2)
+        __list_items__: List of list item dicts (new in v2)
+        __file_name__: Name of the source file
+
+    Args:
+        file: Open file handle to read from
+        level: Starting header level (1 = #, 2 = ##, etc.) - for compatibility, currently ignored
+
+    Returns:
+        Nested dict structure representing the markdown hierarchy
+    """
+    from diary_md import md_adapter
+
+    # Handle non-seekable streams by reading into memory
+    file_name = getattr(file, 'name', '<stream>')
+    content = file.read()
+
+    # Parse using markdown-it-py
+    sections = md_adapter.parse_markdown_string(content)
+
+    def section_to_dict(section: md_adapter.MarkdownSection) -> dict:
+        """Convert a MarkdownSection to the expected dict format."""
+        result: dict = {}
+
+        # Add content in the original format for backward compatibility
+        content_parts = []
+        for para in section.paragraphs:
+            content_parts.append(para)
+            content_parts.append('')
+
+        for item in section.list_items:
+            content_parts.append(f"* {item['text']}")
+            for nested in item.get('nested', []):
+                content_parts.append(f"  * {nested['text']}")
+
+        content_str = '\n'.join(content_parts)
+        if content_str:
+            result['__content__'] = content_str
+
+        # Add new structured data for v2 consumers
+        if section.paragraphs:
+            result['__paragraphs__'] = section.paragraphs
+        if section.list_items:
+            result['__list_items__'] = section.list_items
+
+        result['__file_name__'] = file_name
+
+        # Process subsections recursively
+        for subsection in section.subsections:
+            result[subsection.heading] = section_to_dict(subsection)
+
+        return result
+
+    # Build the top-level result dict
+    ret_dict: dict = {}
+    for section in sections:
+        ret_dict[section.heading] = section_to_dict(section)
+
+    return ret_dict
+
+
 def find_or_create_date_section(content: str, target_date: datetime) -> tuple[int, bool]:
     """Find existing date section or determine where to insert a new one.
 

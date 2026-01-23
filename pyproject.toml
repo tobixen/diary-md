@@ -25,6 +25,7 @@ classifiers = [
 ]
 dependencies = [
     "click>=8.0",
+    "markdown-it-py>=3.0.0",
 ]
 
 [project.optional-dependencies]
