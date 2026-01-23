@@ -2,7 +2,6 @@
 
 import re
 from datetime import datetime
-from io import StringIO
 from pathlib import Path
 from typing import TextIO
 
@@ -11,84 +10,6 @@ from diary_md.models import DATE_FORMAT, VALID_WEEKDAYS, WEEKDAY_TO_INDEX, WEEKD
 
 
 def markdown_to_dict(file: TextIO, level: int = 1) -> dict:
-    """Parse a markdown file into a hierarchical dict structure.
-
-    Takes a markdown file, finds all section headers and subsection headers.
-    Creates a hierarchical dict structure where section headers are keys
-    and values are dicts containing subsection headers, etc.
-
-    Special keys:
-        __content__: Text content within a section
-        __file_position__: File position after the section
-        __file_name__: Name of the source file
-
-    Args:
-        file: Open file handle to read from
-        level: Starting header level (1 = #, 2 = ##, etc.)
-
-    Returns:
-        Nested dict structure representing the markdown hierarchy
-    """
-    # Handle non-seekable streams (like piped stdin) by reading into memory
-    if not file.seekable():
-        file_name = getattr(file, 'name', '<stream>')
-        content = file.read()
-        file = StringIO(content)
-        file.name = file_name  # Preserve original name
-
-    ret_dict: dict = {}
-    content = ""
-
-    while True:
-        file_position = file.tell()
-        line = file.readline()
-
-        if not line:
-            if content:
-                ret_dict['__content__'] = content
-            return ret_dict
-
-        header_level = 0
-        while header_level < len(line) and line[header_level] == '#':
-            header_level += 1
-
-        if not header_level:
-            content += line
-            continue
-
-        if content:
-            ret_dict['__content__'] = content
-            content = ""
-
-        # Special hack for files without a top-level header
-        if header_level == level + 1 and level == 1:
-            ret_dict['__top__'] = {}
-            ret_dict = ret_dict['__top__']
-            level = 2
-
-        if header_level < level:
-            file.seek(file_position)
-            return ret_dict
-
-        if header_level == level:
-            section_name = line[header_level:].strip()
-            ret_dict[section_name] = markdown_to_dict(file, header_level + 1)
-            ret_dict[section_name]['__file_position__'] = file.tell()
-            ret_dict[section_name]['__file_name__'] = getattr(file, 'name', '<stream>')
-        else:
-            raise DiaryParseError(
-                f"Invalid header level jump: expected level {level} ({'#'*level}), "
-                f"got level {header_level} ({'#'*header_level})",
-                file_name=getattr(file, 'name', '<stream>'),
-                file_position=file_position,
-                section=line.strip(),
-                content=line
-            )
-
-    return ret_dict
-
-
-def markdown_to_dict_v2(file: TextIO, level: int = 1) -> dict:
     """Parse a markdown file into a hierarchical dict structure using markdown-it-py.
 
     This is a refactored version that uses the markdown-it-py library for parsing.

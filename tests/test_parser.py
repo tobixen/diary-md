@@ -3,15 +3,11 @@
 from datetime import datetime
 from io import StringIO
 
-import pytest
-
-from diary_md.exceptions import DiaryParseError
 from diary_md.parser import (
     find_or_create_date_section,
     find_section_end,
     find_section_in_date,
     markdown_to_dict,
-    markdown_to_dict_v2,
     parse_diary_expenses,
 )
 
@@ -72,16 +68,6 @@ More content.
         assert '__content__' in result['Header']
         assert 'Some content here.' in result['Header']['__content__']
 
-    def test_invalid_header_jump(self):
-        """Invalid header level jump raises error."""
-        content = """\
-# Header
-
-#### Invalid jump
-"""
-        with pytest.raises(DiaryParseError) as exc_info:
-            markdown_to_dict(StringIO(content))
-        assert "Invalid header level jump" in str(exc_info.value)
 
 
 class TestFindOrCreateDateSection:
@@ -245,64 +231,11 @@ class TestParseDiaryExpenses:
         assert expenses == []
 
 
-class TestMarkdownToDictV2:
-    """Tests for markdown_to_dict_v2 function (markdown-it-py based)."""
+class TestMarkdownToDictMarkdownItPy:
+    """Tests for markdown_to_dict function (markdown-it-py based)."""
 
-    def test_simple_structure(self):
-        """Parse simple markdown structure."""
-        content = """\
-# Header 1
-
-Content under header 1.
-
-## Section 1.1
-
-Content under section 1.1.
-
-## Section 1.2
-
-Content under section 1.2.
-"""
-        result = markdown_to_dict_v2(StringIO(content))
-        assert 'Header 1' in result
-        assert 'Section 1.1' in result['Header 1']
-        assert 'Section 1.2' in result['Header 1']
-
-    def test_nested_content(self):
-        """Parse nested markdown content."""
-        content = """\
-# Trip
-
-## Monday 2026-01-20
-
-### Expenses
-
-* EUR 15.00 - groceries - Lidl
-
-### Maintenance
-
-Fixed the thing.
-"""
-        result = markdown_to_dict_v2(StringIO(content))
-        assert 'Trip' in result
-        assert 'Monday 2026-01-20' in result['Trip']
-        assert 'Expenses' in result['Trip']['Monday 2026-01-20']
-        assert '* EUR 15.00' in result['Trip']['Monday 2026-01-20']['Expenses']['__content__']
-
-    def test_content_key(self):
-        """Content is stored under __content__ key."""
-        content = """\
-# Header
-
-Some content here.
-More content.
-"""
-        result = markdown_to_dict_v2(StringIO(content))
-        assert '__content__' in result['Header']
-        assert 'Some content here.' in result['Header']['__content__']
-
-    def test_v2_structured_data(self):
-        """V2 provides structured access to paragraphs and list items."""
+    def test_structured_data(self):
+        """Parser provides structured access to paragraphs and list items."""
         content = """\
 # Header
 
@@ -311,41 +244,9 @@ Paragraph text.
 * Item 1
 * Item 2
 """
-        result = markdown_to_dict_v2(StringIO(content))
+        result = markdown_to_dict(StringIO(content))
         assert '__paragraphs__' in result['Header']
         assert result['Header']['__paragraphs__'] == ['Paragraph text.']
         assert '__list_items__' in result['Header']
         assert len(result['Header']['__list_items__']) == 2
         assert result['Header']['__list_items__'][0]['text'] == 'Item 1'
-
-    def test_v1_v2_compatibility(self):
-        """V2 produces compatible output with V1 for basic cases."""
-        content = """\
-# Trip
-
-## Monday 2026-01-20
-
-### Expenses
-
-* EUR 15.00 - groceries - Lidl
-* EUR 8.50 - transport - bus
-"""
-        result_v1 = markdown_to_dict(StringIO(content))
-        result_v2 = markdown_to_dict_v2(StringIO(content))
-
-        # Same top-level structure
-        assert 'Trip' in result_v1
-        assert 'Trip' in result_v2
-
-        # Same nested structure
-        assert 'Monday 2026-01-20' in result_v1['Trip']
-        assert 'Monday 2026-01-20' in result_v2['Trip']
-
-        # Both have content
-        expenses_v1 = result_v1['Trip']['Monday 2026-01-20']['Expenses']
-        expenses_v2 = result_v2['Trip']['Monday 2026-01-20']['Expenses']
-
-        assert '__content__' in expenses_v1
-        assert '__content__' in expenses_v2
-        assert 'EUR 15.00' in expenses_v1['__content__']
-        assert 'EUR 15.00' in expenses_v2['__content__']
