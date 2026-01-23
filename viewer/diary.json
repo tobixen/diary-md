@@ -1,0 +1,48 @@
+{
+  "trips": [
+    {
+      "title": "Trip to Norway",
+      "dates": [
+        {
+          "date": "2026-01-21",
+          "dateString": "Tuesday 2026-01-21",
+          "sections": {
+            "Expenses": "- Coffee EUR:3.50 category:food\n- Train ticket EUR:25.00 category:transport",
+            "Notes": "Arrived in Oslo. Weather was surprisingly mild for January. The train ride was scenic."
+          }
+        },
+        {
+          "date": "2026-01-22",
+          "dateString": "Wednesday 2026-01-22",
+          "sections": {
+            "Expenses": "- Lunch EUR:15.00 category:food\n- Museum ticket EUR:12.00 category:entertainment",
+            "Notes": "Visited the Munch Museum. The Scream is even more impressive in person.\n\nWalked around the harbor area in the evening."
+          }
+        }
+      ]
+    },
+    {
+      "title": "Summer Vacation - Gothenburg",
+      "dates": [
+        {
+          "date": "2026-07-15",
+          "dateString": "Wednesday 2026-07-15",
+          "sections": {
+            "Expenses": "- Hotel SEK:1200.00\n- Dinner SEK:350.00",
+            "Notes": "Arrived in Göteborg (Gothenburg). Checked into hotel near Avenyn.\n\nThe city is beautiful in summer. Lots of outdoor cafes.",
+            "Weather": "Sunny, 23°C, perfect weather"
+          }
+        },
+        {
+          "date": "2026-07-16",
+          "dateString": "Thursday 2026-07-16",
+          "sections": {
+            "Expenses": "- Breakfast SEK:120.00\n- Liseberg entrance SEK:495.00\n- Lunch SEK:200.00",
+            "Notes": "Spent the day at Liseberg amusement park. Rode AtmosFear - terrifying but amazing views from the top!",
+            "Weather": "Partly cloudy, 21°C"
+          }
+        }
+      ]
+    }
+  ]
+}

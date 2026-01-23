@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diary Viewer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .filter-section {
+            margin-bottom: 15px;
+        }
+
+        .filter-section label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        .date-filters {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .date-filters input {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .section-filters, .view-controls, .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn, .view-btn, .action-btn {
+            padding: 8px 16px;
+            background: #ecf0f1;
+            border: 2px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .filter-btn:hover, .view-btn:hover, .action-btn:hover {
+            background: #d5d8dc;
+        }
+
+        .filter-btn.active {
+            background: #3498db;
+            color: white;
+            border-color: #2980b9;
+        }
+
+        .view-btn.active {
+            background: #27ae60;
+            color: white;
+            border-color: #229954;
+        }
+
+        .expense-summary {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border-left: 4px solid #f39c12;
+            display: none;
+        }
+
+        .expense-summary h3 {
+            margin-bottom: 10px;
+            color: #856404;
+        }
+
+        .expense-total {
+            font-size: 18px;
+            font-weight: bold;
+            color: #856404;
+        }
+
+        .stats {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border-left: 4px solid #27ae60;
+        }
+
+        .stats h3 {
+            margin-bottom: 10px;
+            color: #1e8449;
+        }
+
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .tag {
+            background: #3498db;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+        }
+
+        .content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .diary-entry {
+            margin-bottom: 20px;
+        }
+
+        .level-1 {
+            border-left: 4px solid #3498db;
+            padding-left: 20px;
+            margin-bottom: 30px;
+        }
+
+        .level-1 > .collapsible-header {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .level-2 {
+            border-left: 3px solid #95a5a6;
+            padding-left: 15px;
+            margin-bottom: 20px;
+            margin-top: 15px;
+        }
+
+        .level-2 > .collapsible-header {
+            font-size: 18px;
+            font-weight: 600;
+            color: #34495e;
+        }
+
+        .level-3 {
+            margin-bottom: 15px;
+            margin-top: 10px;
+        }
+
+        .level-3 > .collapsible-header {
+            font-size: 16px;
+            font-weight: 600;
+            color: #7f8c8d;
+        }
+
+        .section-content {
+            margin-top: 10px;
+            color: #555;
+            line-height: 1.8;
+        }
+
+        .section-content p {
+            margin-bottom: 10px;
+        }
+
+        .section-content ul {
+            margin-left: 20px;
+            margin-bottom: 10px;
+        }
+
+        .section-content li {
+            margin-bottom: 4px;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        @media (max-width: 768px) {
+            .date-filters {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+
+    <!-- Inject common styles from md-viewer-common.js -->
+    <style id="common-styles"></style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📔 Diary Viewer</h1>
+            <p>Browse, search, and analyze your markdown diary</p>
+        </header>
+
+        <div class="controls">
+            <input type="text" class="search-box" id="searchBox" placeholder="🔍 Search entries (supports multi-language place names)...">
+
+            <div class="filter-section">
+                <label>📅 Date Range:</label>
+                <div class="date-filters">
+                    <input type="date" id="dateFrom" placeholder="From">
+                    <input type="date" id="dateTo" placeholder="To">
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <label>🏷️ Filter by Section:</label>
+                <div class="section-filters" id="sectionFilters">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <label>👁️ View Mode:</label>
+                <div class="view-controls">
+                    <button class="view-btn active" data-view="full">Full</button>
+                    <button class="view-btn" data-view="headers">Headers Only</button>
+                    <button class="view-btn" data-view="collapsed">Collapsed</button>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <label>⚡ Actions:</label>
+                <div class="action-buttons">
+                    <button class="action-btn" id="showExpenses">💰 Show Expense Summary</button>
+                    <button class="action-btn" id="exportBtn">📤 Export Filtered Results</button>
+                </div>
+            </div>
+
+            <div class="expense-summary" id="expenseSummary">
+                <h3>💰 Expense Summary</h3>
+                <div id="expenseDetails"></div>
+            </div>
+
+            <div class="stats">
+                <h3>📊 Statistics</h3>
+                <p><strong>Total entries:</strong> <span id="totalEntries">0</span></p>
+                <p><strong>Visible entries:</strong> <span id="visibleEntries">0</span></p>
+                <p><strong>Unique subsections found:</strong></p>
+                <div class="tag-list" id="uniqueSubsections"></div>
+            </div>
+        </div>
+
+        <div class="content" id="diaryContent">
+            <div class="loading">Loading diary...</div>
+        </div>
+    </div>
+
+    <!-- Load shared library -->
+    <script src="md-viewer-common.js"></script>
+
+    <script>
+        // Diary-specific viewer class
+        class DiaryViewer extends MarkdownViewerBase {
+            constructor() {
+                super('diary.json', 'aliases.json');
+                this.trips = [];
+                this.allSubsections = new Set();
+                this.activeSectionFilters = new Set();
+                this.currentViewMode = 'full';
+                this.searchTerm = '';
+                this.dateFrom = '';
+                this.dateTo = '';
+                this.collapsibleManager = new CollapsibleManager('#diaryContent');
+            }
+
+            async init() {
+                try {
+                    // Load data and aliases
+                    await Promise.all([
+                        this.loadData(),
+                        this.loadAliases()
+                    ]);
+
+                    // Parse diary data structure
+                    this.parseTrips();
+
+                    // Setup UI
+                    this.setupEventListeners();
+                    this.populateSectionFilters();
+                    this.render();
+                    this.collapsibleManager.init();
+
+                    console.log('✅ Diary viewer initialized');
+                } catch (error) {
+                    this.showError('Failed to load diary: ' + error.message);
+                }
+            }
+
+            parseTrips() {
+                // Expect data format: { trips: [...] }
+                this.trips = this.data.trips || [];
+
+                // Collect all unique subsections
+                this.trips.forEach(trip => {
+                    trip.dates.forEach(dateEntry => {
+                        Object.keys(dateEntry.sections || {}).forEach(section => {
+                            this.allSubsections.add(section);
+                        });
+                    });
+                });
+            }
+
+            setupEventListeners() {
+                // Search
+                const searchBox = document.getElementById('searchBox');
+                const debouncedRender = this.debounce(() => this.render(), 300);
+                searchBox.addEventListener('input', (e) => {
+                    this.searchTerm = e.target.value;
+                    debouncedRender();
+                });
+
+                // Date filters
+                document.getElementById('dateFrom').addEventListener('change', (e) => {
+                    this.dateFrom = e.target.value;
+                    this.render();
+                });
+                document.getElementById('dateTo').addEventListener('change', (e) => {
+                    this.dateTo = e.target.value;
+                    this.render();
+                });
+
+                // View mode
+                document.querySelectorAll('.view-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentViewMode = e.target.dataset.view;
+                        this.render();
+                    });
+                });
+
+                // Actions
+                document.getElementById('showExpenses').addEventListener('click', () => {
+                    this.toggleExpenseSummary();
+                });
+                document.getElementById('exportBtn').addEventListener('click', () => {
+                    this.exportResults();
+                });
+            }
+
+            populateSectionFilters() {
+                const container = document.getElementById('sectionFilters');
+                const uniqueTags = document.getElementById('uniqueSubsections');
+
+                container.innerHTML = '';
+                uniqueTags.innerHTML = '';
+
+                Array.from(this.allSubsections).sort().forEach(section => {
+                    // Filter buttons
+                    const btn = document.createElement('button');
+                    btn.className = 'filter-btn';
+                    btn.textContent = section;
+                    btn.addEventListener('click', () => {
+                        btn.classList.toggle('active');
+                        if (this.activeSectionFilters.has(section)) {
+                            this.activeSectionFilters.delete(section);
+                        } else {
+                            this.activeSectionFilters.add(section);
+                        }
+                        this.render();
+                    });
+                    container.appendChild(btn);
+
+                    // Stats tags
+                    const tag = document.createElement('span');
+                    tag.className = 'tag';
+                    tag.textContent = section;
+                    uniqueTags.appendChild(tag);
+                });
+            }
+
+            render() {
+                const contentDiv = document.getElementById('diaryContent');
+                let html = '';
+                let totalEntries = 0;
+                let visibleEntries = 0;
+
+                this.trips.forEach(trip => {
+                    let tripHtml = '';
+                    let tripVisible = false;
+
+                    trip.dates.forEach(dateEntry => {
+                        totalEntries++;
+
+                        // Date filtering
+                        const date = this.extractDate(dateEntry.dateString);
+                        if (this.dateFrom && date && date < this.dateFrom) return;
+                        if (this.dateTo && date && date > this.dateTo) return;
+
+                        let dateHtml = '';
+                        let dateVisible = false;
+
+                        Object.entries(dateEntry.sections).forEach(([section, content]) => {
+                            // Section filtering
+                            if (this.activeSectionFilters.size > 0 && !this.activeSectionFilters.has(section)) {
+                                return;
+                            }
+
+                            // Search filtering
+                            const fullText = `${trip.title} ${dateEntry.dateString} ${section} ${content}`;
+                            if (this.searchTerm && !this.matchesSearch(fullText, this.searchTerm)) {
+                                return;
+                            }
+
+                            // Highlight search terms
+                            let renderedContent = this.markdownToHtml(content);
+                            if (this.searchTerm) {
+                                renderedContent = this.highlightText(renderedContent, this.searchTerm);
+                            }
+
+                            dateHtml += `
+                                <div class="diary-entry level-3">
+                                    <div class="collapsible-header ${this.currentViewMode === 'collapsed' ? 'collapsed' : ''}">
+                                        <span class="collapse-icon">▼</span>
+                                        <strong>${section}</strong>
+                                    </div>
+                                    <div class="collapsible-content section-content ${this.currentViewMode === 'collapsed' ? 'collapsed' : ''}">
+                                        ${renderedContent}
+                                    </div>
+                                </div>
+                            `;
+                            dateVisible = true;
+                        });
+
+                        if (dateVisible) {
+                            tripHtml += `
+                                <div class="diary-entry level-2">
+                                    <div class="collapsible-header ${this.currentViewMode !== 'full' ? 'collapsed' : ''}">
+                                        <span class="collapse-icon">▼</span>
+                                        <strong>${dateEntry.dateString}</strong>
+                                    </div>
+                                    <div class="collapsible-content ${this.currentViewMode !== 'full' ? 'collapsed' : ''}">
+                                        ${dateHtml}
+                                    </div>
+                                </div>
+                            `;
+                            tripVisible = true;
+                            visibleEntries++;
+                        }
+                    });
+
+                    if (tripVisible) {
+                        html += `
+                            <div class="diary-entry level-1">
+                                <div class="collapsible-header ${this.currentViewMode === 'collapsed' ? 'collapsed' : ''}">
+                                    <span class="collapse-icon">▼</span>
+                                    <strong>${trip.title}</strong>
+                                </div>
+                                <div class="collapsible-content ${this.currentViewMode === 'collapsed' ? 'collapsed' : ''}">
+                                    ${tripHtml}
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+
+                contentDiv.innerHTML = html || '<div class="no-results">No entries match your filters.</div>';
+
+                // Update stats
+                document.getElementById('totalEntries').textContent = totalEntries;
+                document.getElementById('visibleEntries').textContent = visibleEntries;
+
+                // Reinitialize collapsible after render
+                this.collapsibleManager.init();
+            }
+
+            toggleExpenseSummary() {
+                const summary = document.getElementById('expenseSummary');
+                const isVisible = summary.style.display !== 'none';
+
+                if (isVisible) {
+                    summary.style.display = 'none';
+                } else {
+                    this.calculateExpenses();
+                    summary.style.display = 'block';
+                }
+            }
+
+            calculateExpenses() {
+                const expenses = {};
+                const expenseRegex = /(EUR|USD|NOK|SEK|GBP):?\s*(\d+\.?\d*)/gi;
+
+                this.trips.forEach(trip => {
+                    trip.dates.forEach(dateEntry => {
+                        const expenseSection = dateEntry.sections['Expenses'];
+                        if (expenseSection) {
+                            let match;
+                            while ((match = expenseRegex.exec(expenseSection)) !== null) {
+                                const currency = match[1];
+                                const amount = parseFloat(match[2]);
+                                if (!expenses[currency]) expenses[currency] = 0;
+                                expenses[currency] += amount;
+                            }
+                        }
+                    });
+                });
+
+                const details = document.getElementById('expenseDetails');
+                if (Object.keys(expenses).length === 0) {
+                    details.innerHTML = '<p>No expenses found in diary.</p>';
+                } else {
+                    let html = '<div class="expense-total">';
+                    for (const [currency, total] of Object.entries(expenses)) {
+                        html += `<div>${currency}: ${total.toFixed(2)}</div>`;
+                    }
+                    html += '</div>';
+                    details.innerHTML = html;
+                }
+            }
+
+            exportResults() {
+                const content = document.getElementById('diaryContent').innerText;
+                const filename = `diary-export-${new Date().toISOString().split('T')[0]}.txt`;
+                this.exportToFile(content, filename);
+            }
+
+            showError(message) {
+                document.getElementById('diaryContent').innerHTML = `
+                    <div class="error">
+                        <strong>Error:</strong> ${message}
+                    </div>
+                `;
+            }
+        }
+
+        // Inject common styles
+        document.getElementById('common-styles').textContent = MD_VIEWER_COMMON_STYLES;
+
+        // Initialize viewer when page loads
+        const viewer = new DiaryViewer();
+        viewer.init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "göteborg": ["gothenburg", "gøteborg", "goteborg"],
+  "gothenburg": ["göteborg", "gøteborg", "goteborg"],
+  "gøteborg": ["gothenburg", "göteborg", "goteborg"],
+  "царево": ["tsarevo", "tzarevo", "carevo"],
+  "tsarevo": ["царево", "tzarevo", "carevo"],
+  "tzarevo": ["царево", "tsarevo", "carevo"],
+  "carevo": ["царево", "tsarevo", "tzarevo"],
+  "москва": ["moscow", "moskva"],
+  "moscow": ["москва", "moskva"],
+  "moskva": ["москва", "moscow"],
+  "københavn": ["copenhagen", "kobenhavn"],
+  "copenhagen": ["københavn", "kobenhavn"],
+  "kobenhavn": ["københavn", "copenhagen"],
+  "paris": ["paris"],
+  "oslo": ["oslo"],
+  "stockholm": ["stockholm"],
+  "london": ["london"],
+  "berlin": ["berlin"]
+}
