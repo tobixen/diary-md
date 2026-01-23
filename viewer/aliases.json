@@ -2,6 +2,13 @@
   "göteborg": ["gothenburg", "gøteborg", "goteborg"],
   "gothenburg": ["göteborg", "gøteborg", "goteborg"],
   "gøteborg": ["gothenburg", "göteborg", "goteborg"],
+  "oslo": ["christiania", "kristiania"],
+  "bergen": ["bjørgvin"],
+  "fløyen": ["floyen", "floien", "fløibanen", "floibanen"],
+  "bryggen": ["tyskebryggen", "hanseatic wharf"],
+  "liseberg": ["liseberg amusement park"],
+  "haga": ["haga old town"],
+  "avenyn": ["kungsportsavenyn", "the avenue"],
   "царево": ["tsarevo", "tzarevo", "carevo"],
   "tsarevo": ["царево", "tzarevo", "carevo"],
   "tzarevo": ["царево", "tsarevo", "carevo"],
@@ -12,9 +19,7 @@
   "københavn": ["copenhagen", "kobenhavn"],
   "copenhagen": ["københavn", "kobenhavn"],
   "kobenhavn": ["københavn", "copenhagen"],
-  "paris": ["paris"],
-  "oslo": ["oslo"],
-  "stockholm": ["stockholm"],
-  "london": ["london"],
-  "berlin": ["berlin"]
+  "istanbul": ["konstantinopel", "constantinople", "byzantium"],
+  "varna": ["варна", "odessos"],
+  "варна": ["varna", "odessos"]
 }

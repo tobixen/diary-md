@@ -300,9 +300,21 @@ def _validate_chronological_order(entries: list[dict]) -> None:
         dt = entry['date']
         section = f"{entry['dow']} {entry['date']} {entry.get('itenary', '')}"
 
-        if dt <= last_dt or (fn == last_fn and fp <= last_fp):
+        # Check chronological order
+        if dt < last_dt:
             raise DiaryParseError(
-                "Entries not in chronological order or duplicate date",
+                "Entries not in chronological order",
+                file_name=fn,
+                file_position=fp,
+                section=section,
+                date=dt,
+                content=f"Previous: {last_section} ({last_dt})"
+            )
+
+        # Check for duplicate entries (same date, same file, same position)
+        if dt == last_dt and fn == last_fn and fp == last_fp:
+            raise DiaryParseError(
+                "Duplicate date entry",
                 file_name=fn,
                 file_position=fp,
                 section=section,

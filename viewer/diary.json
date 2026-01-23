@@ -1,22 +1,29 @@
 {
   "trips": [
     {
-      "title": "Trip to Norway",
+      "title": "Trip to Norway - Oslo and Bergen",
       "dates": [
         {
           "date": "2026-01-21",
-          "dateString": "Tuesday 2026-01-21",
+          "dateString": "Wednesday 2026-01-21 Oslo",
           "sections": {
-            "Expenses": "- Coffee EUR:3.50 category:food\n- Train ticket EUR:25.00 category:transport",
-            "Notes": "Arrived in Oslo. Weather was surprisingly mild for January. The train ride was scenic."
+            "Expenses": "* NOK 450 - accommodation - Hotel near central station (one night)\n* NOK 35 - dining - Coffee and cardamom bun at a café\n* NOK 185 - dining - Dinner at restaurant (fish soup and reindeer)\n* NOK 45 - transport - Local tram ticket",
+            "Weather": "Partly cloudy, 5°C, light wind\n"
           }
         },
         {
           "date": "2026-01-22",
-          "dateString": "Wednesday 2026-01-22",
+          "dateString": "Thursday 2026-01-22 Oslo - Bergen railway - Bergen",
           "sections": {
-            "Expenses": "- Lunch EUR:15.00 category:food\n- Museum ticket EUR:12.00 category:entertainment",
-            "Notes": "Visited the Munch Museum. The Scream is even more impressive in person.\n\nWalked around the harbor area in the evening."
+            "Expenses": "* NOK 120 - entertainment - Munch Museum ticket\n* NOK 55 - dining - Lunch at museum café\n* NOK 850 - transport - Train ticket Oslo to Bergen\n* NOK 25 - dining - Coffee on the train"
+          }
+        },
+        {
+          "date": "2026-01-23",
+          "dateString": "Friday 2026-01-23 Bergen - Bryggen - Fløyen",
+          "sections": {
+            "Expenses": "* NOK 550 - accommodation - Hostel in Bergen (one night)\n* NOK 100 - transport - Fløibanen funicular return ticket\n* NOK 180 - dining - Fish soup at the fish market\n* NOK 45 - dining - Coffee and waffle at Fløyen café\n* NOK 95 - dining - Dinner (pizza and beer)",
+            "Weather": "Rain and clouds, 7°C (warmer than Oslo!)\n"
           }
         }
       ]
@@ -26,20 +33,25 @@
       "dates": [
         {
           "date": "2026-07-15",
-          "dateString": "Wednesday 2026-07-15",
+          "dateString": "Wednesday 2026-07-15 Gothenburg (Göteborg)",
           "sections": {
-            "Expenses": "- Hotel SEK:1200.00\n- Dinner SEK:350.00",
-            "Notes": "Arrived in Göteborg (Gothenburg). Checked into hotel near Avenyn.\n\nThe city is beautiful in summer. Lots of outdoor cafes.",
-            "Weather": "Sunny, 23°C, perfect weather"
+            "Expenses": "* SEK 1200 - accommodation - Hotel near Avenyn (one night)\n* SEK 145 - transport - Train ticket Oslo to Gothenburg\n* SEK 350 - dining - Dinner at outdoor restaurant on Avenyn\n* SEK 55 - dining - Ice cream by the canal",
+            "Weather": "Sunny, 23°C, perfect summer weather\n"
           }
         },
         {
           "date": "2026-07-16",
-          "dateString": "Thursday 2026-07-16",
+          "dateString": "Thursday 2026-07-16 Liseberg amusement park",
           "sections": {
-            "Expenses": "- Breakfast SEK:120.00\n- Liseberg entrance SEK:495.00\n- Lunch SEK:200.00",
-            "Notes": "Spent the day at Liseberg amusement park. Rode AtmosFear - terrifying but amazing views from the top!",
-            "Weather": "Partly cloudy, 21°C"
+            "Expenses": "* SEK 120 - dining - Breakfast at hotel\n* SEK 495 - entertainment - Liseberg entrance ticket\n* SEK 200 - dining - Lunch inside Liseberg (burger and drink)\n* SEK 85 - dining - Coffee and kanelbulle in the afternoon\n* SEK 280 - dining - Dinner in the city (fish and chips)",
+            "Weather": "Partly cloudy, 21°C\n"
+          }
+        },
+        {
+          "date": "2026-07-17",
+          "dateString": "Friday 2026-07-17 Haga old town - Botanical garden",
+          "sections": {
+            "Expenses": "* SEK 95 - dining - Haga bulle and coffee at Café Husaren\n* SEK 0 - entertainment - Botanical garden (free entry!)\n* SEK 75 - dining - Lunch (sallad and smoothie)\n* SEK 180 - transport - Train ticket back home"
           }
         }
       ]
