@@ -353,7 +353,8 @@ class CollapsibleManager {
         const content = headerElement.nextElementSibling;
         if (content) {
             content.classList.remove('collapsed');
-            content.style.maxHeight = content.scrollHeight + 'px';
+            // Use 'none' instead of fixed height to allow nested content to expand
+            content.style.maxHeight = 'none';
         }
     }
 
