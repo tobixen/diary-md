@@ -355,11 +355,13 @@
                 // Expect data format: { trips: [...] }
                 this.trips = this.data.trips || [];
 
-                // Collect all unique subsections
+                // Collect all unique subsections (skip empty key which is main content)
                 this.trips.forEach(trip => {
                     trip.dates.forEach(dateEntry => {
                         Object.keys(dateEntry.sections || {}).forEach(section => {
-                            this.allSubsections.add(section);
+                            if (section !== '') {
+                                this.allSubsections.add(section);
+                            }
                         });
                     });
                 });
@@ -455,7 +457,25 @@
                         let dateHtml = '';
                         let dateVisible = false;
 
+                        // First, handle main content (empty key) - shown directly under date
+                        const mainContent = dateEntry.sections[''];
+                        if (mainContent) {
+                            // Search filtering for main content
+                            const fullText = `${trip.title} ${dateEntry.dateString} ${mainContent}`;
+                            if (!this.searchTerm || this.matchesSearch(fullText, this.searchTerm)) {
+                                let renderedContent = this.markdownToHtml(mainContent);
+                                if (this.searchTerm) {
+                                    renderedContent = this.highlightText(renderedContent, this.searchTerm);
+                                }
+                                dateHtml += `<div class="section-content main-content">${renderedContent}</div>`;
+                                dateVisible = true;
+                            }
+                        }
+
                         Object.entries(dateEntry.sections).forEach(([section, content]) => {
+                            // Skip main content (already handled above)
+                            if (section === '') return;
+
                             // Section filtering
                             if (this.activeSectionFilters.size > 0 && !this.activeSectionFilters.has(section)) {
                                 return;

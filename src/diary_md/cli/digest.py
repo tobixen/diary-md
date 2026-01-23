@@ -166,6 +166,12 @@ def export_web_json(ctx, pretty):
 
             # Build sections dict
             sections = {}
+
+            # Include main day content (prose before any ### subsection)
+            main_content = day_data.get('__content__', '').strip()
+            if main_content:
+                sections[''] = main_content
+
             for section_name in day_data:
                 if section_name.startswith('__'):
                     continue
@@ -211,6 +217,12 @@ def export_web_json(ctx, pretty):
 
                 # Build sections dict
                 sections = {}
+
+                # Include main day content (prose before any ### subsection)
+                main_content = day_data.get('__content__', '').strip()
+                if main_content:
+                    sections[''] = main_content
+
                 for section_name in day_data:
                     if section_name.startswith('__'):
                         continue
