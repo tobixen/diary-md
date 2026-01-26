@@ -10,6 +10,7 @@ from pathlib import Path
 
 import click
 
+from diary_md.discover import get_default_diary_files
 from diary_md.git import git_commit_multiple_repos
 from diary_md.models import SUPPORTED_CURRENCIES
 
@@ -43,15 +44,8 @@ class DiaryExpense:
     split_marker: str | None = None
 
 
-# Default diary files to check
-DEFAULT_DIARIES = [
-    Path.home() / "solveig" / "diary-2026.md",
-    Path.home() / "solveig" / "diary-202401.md",
-    Path.home() / "solveig" / "diary-202312.md",
-    Path.home() / "solveig" / "diary-202310.md",
-    Path.home() / "solveig" / "diary-2023.md",
-    Path.home() / "furusetalle9" / "diary-oslo-202512.md",
-]
+# Default diary files are discovered from current directory
+# Use --diary option to specify files explicitly
 
 DEFAULT_ALIAS_FILE = Path.home() / ".config" / "reconcile-expenses" / "aliases.json"
 DEFAULT_OUTPUT_FILE = Path.home() / "regnskap" / "non-reconciled.csv"
@@ -831,7 +825,7 @@ def reconcile(input_file, fmt, diary, output, currency, tolerance, date_toleranc
         click.echo(f"Error: File not found: {input_file}", err=True)
         sys.exit(1)
 
-    diary_files = list(diary) if diary else DEFAULT_DIARIES
+    diary_files = list(diary) if diary else get_default_diary_files()
 
     click.echo(f"Reading {input_file}...")
     if fmt == 'n26':

@@ -89,14 +89,20 @@ pip install -e ~/diary-md
 Analyze and extract information from markdown diary files.
 
 ```bash
-# Summarize expenses
-diary-digest --diary ~/solveig/diary-2026.md expenses
+# Summarize expenses (reads from stdin or use --diary)
+cat diary-2026.md | diary-digest expenses
+
+# Use explicit diary file
+diary-digest --diary diary-2026.md expenses
 
 # Extract specific sections
-diary-digest --diary ~/solveig/diary-2026.md select-subsection --section Maintenance
+diary-digest --diary diary-2026.md select-subsection --section Maintenance
 
 # Filter by date range
-diary-digest --diary ~/solveig/diary-2026.md --from 2026-01-01 --to 2026-01-31 expenses
+diary-digest --diary diary-2026.md --from 2026-01-01 --to 2026-01-31 expenses
+
+# Export for web viewer
+diary-digest --diary diary-2026.md export-web-json --pretty > diary.json
 ```
 
 ### diary-update
@@ -125,17 +131,17 @@ diary-update --amount 7.10 --description "Lidl" --commit
 Reconcile bank expenses with diary entries.
 
 ```bash
-# Reconcile N26 CSV export
-diary-reconcile ~/tmp/n26.csv
+# Reconcile N26 CSV export (auto-discovers diary*.md in current dir)
+diary-reconcile n26.csv
 
 # Specify format
-diary-reconcile --format wise ~/tmp/wise.csv
+diary-reconcile --format wise wise.csv
 
 # Dry run to see matches
-diary-reconcile --dry-run ~/tmp/n26.csv
+diary-reconcile --dry-run n26.csv
 
-# Use specific diary file
-diary-reconcile --diary ~/solveig/diary-2026.md ~/tmp/n26.csv
+# Use specific diary file(s)
+diary-reconcile --diary diary-2026.md --diary diary-202401.md n26.csv
 ```
 
 ## Supported Bank Formats

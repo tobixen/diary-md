@@ -6,14 +6,14 @@ from pathlib import Path
 
 import click
 
+from diary_md.discover import get_current_diary_file
 from diary_md.git import git_commit, git_push
 from diary_md.parser import find_or_create_date_section, find_section_end, find_section_in_date
 
 
 def get_diary_file() -> Path:
     """Get the diary file path for current year."""
-    year = datetime.now().year
-    return Path.home() / "solveig" / f"diary-{year}.md"
+    return get_current_diary_file()
 
 
 def format_date_header(dt: datetime) -> str:

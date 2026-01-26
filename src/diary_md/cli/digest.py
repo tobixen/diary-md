@@ -30,10 +30,10 @@ def load_config(config_file: Path | None = None) -> dict:
     Config format (with diary-specific patterns):
     {
         "diary_configs": {
-            "**/solveig/*": {
+            "**/boat-diary/*": {
                 "allowable_subsections": ["Expenses", "Maintenance", ...]
             },
-            "**/furusetalle9/*": {
+            "**/home-diary/*": {
                 "allowable_subsections": ["Kostnader", "Tidsbruk", ...]
             }
         },

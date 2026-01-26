@@ -7,6 +7,7 @@
           "date": "2026-01-21",
           "dateString": "Wednesday 2026-01-21 Oslo",
           "sections": {
+            "": "Arrived in Oslo via train from Sweden. The weather was surprisingly mild for January, around 5°C. Checked into a small hotel near the central station and went for a walk around the city center.\n\nThe Akershus Fortress looked beautiful in the winter light. Had dinner at a traditional Norwegian restaurant.\n\nThe cardamom buns (kardemommeboller) here are excellent - much better than what I can get back home. Need to find a recipe.",
             "Expenses": "* NOK 450 - accommodation - Hotel near central station (one night)\n* NOK 35 - dining - Coffee and cardamom bun at a café\n* NOK 185 - dining - Dinner at restaurant (fish soup and reindeer)\n* NOK 45 - transport - Local tram ticket",
             "Weather": "Partly cloudy, 5°C, light wind\n"
           }
@@ -15,6 +16,7 @@
           "date": "2026-01-22",
           "dateString": "Thursday 2026-01-22 Oslo - Bergen railway - Bergen",
           "sections": {
+            "": "Visited the Munch Museum in the morning. The Scream is even more impressive in person - the colors are so vibrant. Spent a couple of hours there, then walked around the harbor area.\n\nIn the evening I took the train to Bergen. The train ride through the mountains was spectacular, even in winter darkness you could see the snow-covered peaks in the moonlight.\n\nThe Bergen railway is one of the most scenic train rides in the world. Even in January, with short daylight hours, it's worth it.",
             "Expenses": "* NOK 120 - entertainment - Munch Museum ticket\n* NOK 55 - dining - Lunch at museum café\n* NOK 850 - transport - Train ticket Oslo to Bergen\n* NOK 25 - dining - Coffee on the train"
           }
         },
@@ -22,6 +24,7 @@
           "date": "2026-01-23",
           "dateString": "Friday 2026-01-23 Bergen - Bryggen - Fløyen",
           "sections": {
+            "": "First full day in Bergen. Walked up to Fløyen via the funicular - the view over the city and the fjords is breathtaking. The old wooden houses of Bryggen look like something out of a fairytale.\n\nHad fish soup for lunch at the fish market. Bergen lives up to its reputation as the rainiest city in Norway - it rained on and off all day.\n\nBergen definitely deserves more time. The atmosphere here is completely different from Oslo - more relaxed, more focused on the sea and fishing traditions.",
             "Expenses": "* NOK 550 - accommodation - Hostel in Bergen (one night)\n* NOK 100 - transport - Fløibanen funicular return ticket\n* NOK 180 - dining - Fish soup at the fish market\n* NOK 45 - dining - Coffee and waffle at Fløyen café\n* NOK 95 - dining - Dinner (pizza and beer)",
             "Weather": "Rain and clouds, 7°C (warmer than Oslo!)\n"
           }
@@ -35,6 +38,7 @@
           "date": "2026-07-15",
           "dateString": "Wednesday 2026-07-15 Gothenburg (Göteborg)",
           "sections": {
+            "": "Arrived in Göteborg (Gothenburg) by train from Oslo. Summer in Sweden is just perfect - long days, warm weather, and everyone seems to be in a good mood.\n\nChecked into a hotel near Avenyn (the main boulevard). The city is beautiful in summer with outdoor cafés everywhere and people sitting by the canal.\n\nGöteborg feels very relaxed compared to Stockholm. The tram system is excellent - you can get anywhere in the city easily.\n\nThe dialect here is quite different from what I learned in Swedish class!",
             "Expenses": "* SEK 1200 - accommodation - Hotel near Avenyn (one night)\n* SEK 145 - transport - Train ticket Oslo to Gothenburg\n* SEK 350 - dining - Dinner at outdoor restaurant on Avenyn\n* SEK 55 - dining - Ice cream by the canal",
             "Weather": "Sunny, 23°C, perfect summer weather\n"
           }
@@ -43,6 +47,7 @@
           "date": "2026-07-16",
           "dateString": "Thursday 2026-07-16 Liseberg amusement park",
           "sections": {
+            "": "Spent the entire day at Liseberg amusement park. This place is amazing! The rides are world-class, and the park is beautifully maintained with gardens and flowers everywhere.\n\nRode AtmosFear (the drop tower) - terrifying but the views from the top before the drop are incredible. You can see the whole city and out to the archipelago.\n\nAtmosFear is 116 meters tall - highest free-fall drop tower in Europe. My legs were shaking for 10 minutes afterwards!\n\nLiseberg is worth visiting even if you don't like rides - the atmosphere and gardens are wonderful.",
             "Expenses": "* SEK 120 - dining - Breakfast at hotel\n* SEK 495 - entertainment - Liseberg entrance ticket\n* SEK 200 - dining - Lunch inside Liseberg (burger and drink)\n* SEK 85 - dining - Coffee and kanelbulle in the afternoon\n* SEK 280 - dining - Dinner in the city (fish and chips)",
             "Weather": "Partly cloudy, 21°C\n"
           }
@@ -51,6 +56,7 @@
           "date": "2026-07-17",
           "dateString": "Friday 2026-07-17 Haga old town - Botanical garden",
           "sections": {
+            "": "Last day in Gothenburg. Visited Haga, the old town with cobblestone streets and traditional wooden houses. Had the famous Haga bulle (giant cinnamon bun) at Café Husaren.\n\nWalked along the canal and through the botanical garden before catching the train back home.\n\nThe Haga bulle at Café Husaren is absolutely massive - probably 400g of cinnamon roll goodness. Couldn't finish it!\n\nGothenburg has been wonderful. Definitely want to come back and explore the archipelago next time.",
             "Expenses": "* SEK 95 - dining - Haga bulle and coffee at Café Husaren\n* SEK 0 - entertainment - Botanical garden (free entry!)\n* SEK 75 - dining - Lunch (sallad and smoothie)\n* SEK 180 - transport - Train ticket back home"
           }
         }
