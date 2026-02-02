@@ -151,6 +151,18 @@ diary-reconcile --diary diary-2026.md --diary diary-202401.md n26.csv
 - `banknorwegian`: Bank Norwegian XLSX export
 - `remember`: Remember credit card JSON export
 
+## Shell Tab Completion
+
+```bash
+# Enable for current user
+make install-completion
+
+# Or system-wide (requires root)
+sudo make install-completion-system
+```
+
+Restart your shell after installation.
+
 ## Development
 
 ```bash
