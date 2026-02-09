@@ -563,11 +563,14 @@
 
             calculateExpenses() {
                 const expenses = {};
-                const expenseRegex = /(EUR|USD|NOK|SEK|GBP):?\s*(\d+\.?\d*)/gi;
+                const expenseRegex = /(EUR|USD|NOK|SEK|GBP|BGN|DKK|TRY|CHF|PLN):?\s*(\d+\.?\d*)/gi;
+                const expenseSectionNames = ['Expenses', 'Kostnader', 'Utgifter'];
 
                 this.trips.forEach(trip => {
                     trip.dates.forEach(dateEntry => {
-                        const expenseSection = dateEntry.sections['Expenses'];
+                        const expenseSection = expenseSectionNames
+                            .map(name => dateEntry.sections[name])
+                            .find(s => s !== undefined);
                         if (expenseSection) {
                             let match;
                             while ((match = expenseRegex.exec(expenseSection)) !== null) {

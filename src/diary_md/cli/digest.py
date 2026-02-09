@@ -11,6 +11,7 @@ import click
 
 from diary_md.exceptions import DiaryParseError
 from diary_md.exchange import get_exchange_rate
+from diary_md.models import find_section
 from diary_md.parser import markdown_to_dict, parse_diary_to_list
 
 DATE_FORMAT = "%Y-%m-%d"
@@ -338,11 +339,12 @@ def expenses(ctx):
     accounted = []
 
     for entry in ctx.obj['diary_list']:
-        if 'Expenses' not in entry:
+        expense_section = find_section(entry, 'Expenses')
+        if expense_section is None:
             continue
 
         unaccounted = ""
-        if '__content__' not in entry['Expenses']:
+        if '__content__' not in expense_section:
             raise DiaryParseError(
                 "Expenses section has no content",
                 file_name=entry.get('__file_name__'),
@@ -352,7 +354,7 @@ def expenses(ctx):
             )
 
         expense_date = entry['date']  # YYYY-MM-DD format
-        expenses_text = entry['Expenses']['__content__'].strip().split('\n')
+        expenses_text = expense_section['__content__'].strip().split('\n')
 
         for expense in expenses_text:
             if not unaccounted:

@@ -15,6 +15,62 @@ VALID_WEEKDAYS = WEEKDAYS_EN + WEEKDAYS_NO
 WEEKDAY_TO_INDEX = {day: i for i, day in enumerate(WEEKDAYS_EN)}
 WEEKDAY_TO_INDEX.update({day: i for i, day in enumerate(WEEKDAYS_NO)})
 
+# Section name aliases (canonical English name -> all known equivalents)
+# This allows commands to work with diaries in any supported language
+SECTION_ALIASES = {
+    'Expenses': ['Kostnader', 'Utgifter'],
+    'Maintenance': ['Vedlikehold'],
+    'Time tracking': ['Tidsbruk', 'Time Tracking'],
+    'Weather': ['Vær'],
+    'Notes': ['Notater'],
+    'Plans': ['Planer'],
+    'Embarkments and disembarkments': ['Av- og påmønstringer'],
+}
+
+# Reverse mapping: any name -> canonical name
+SECTION_TO_CANONICAL = {}
+for canonical, aliases in SECTION_ALIASES.items():
+    SECTION_TO_CANONICAL[canonical] = canonical
+    for alias in aliases:
+        SECTION_TO_CANONICAL[alias] = canonical
+
+
+def find_section(entry: dict, canonical_name: str) -> dict | None:
+    """Find a section in a diary entry by canonical name, checking aliases.
+
+    Args:
+        entry: A diary entry dict with section names as keys
+        canonical_name: The canonical English section name (e.g. 'Expenses')
+
+    Returns:
+        The section dict if found, None otherwise
+    """
+    if canonical_name in entry:
+        return entry[canonical_name]
+    for alias in SECTION_ALIASES.get(canonical_name, []):
+        if alias in entry:
+            return entry[alias]
+    return None
+
+
+def find_section_name(entry: dict, canonical_name: str) -> str | None:
+    """Find the actual section name used in entry for a canonical name.
+
+    Args:
+        entry: A diary entry dict with section names as keys
+        canonical_name: The canonical English section name (e.g. 'Expenses')
+
+    Returns:
+        The actual section name used in the entry, or None if not found
+    """
+    if canonical_name in entry:
+        return canonical_name
+    for alias in SECTION_ALIASES.get(canonical_name, []):
+        if alias in entry:
+            return alias
+    return None
+
+
 # Supported currencies
 SUPPORTED_CURRENCIES = (
     'EUR', 'BGN', 'NOK', 'USD', 'GBP', 'SEK', 'DKK', 'PLN', 'TRY', 'CHF',

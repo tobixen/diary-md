@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from diary_md.models import DateHeader, ExpenseLine
+from diary_md.models import DateHeader, ExpenseLine, find_section, find_section_name
 
 
 class TestDateHeader:
@@ -171,3 +171,47 @@ class TestExpenseLine:
         )
         formatted = expense.format(include_reconciliation=False)
         assert "(reconciled:" not in formatted
+
+
+class TestSectionAliases:
+    """Tests for section name aliases."""
+
+    def test_find_section_english(self):
+        """Find section by English name."""
+        entry = {'Expenses': {'__content__': 'test'}, 'Notes': {}}
+        assert find_section(entry, 'Expenses') == {'__content__': 'test'}
+
+    def test_find_section_norwegian(self):
+        """Find section by Norwegian alias."""
+        entry = {'Kostnader': {'__content__': 'test'}, 'Tidsbruk': {}}
+        assert find_section(entry, 'Expenses') == {'__content__': 'test'}
+
+    def test_find_section_missing(self):
+        """Return None when section not found."""
+        entry = {'Notes': {}, 'Weather': {}}
+        assert find_section(entry, 'Expenses') is None
+
+    def test_find_section_name_english(self):
+        """Return actual English name used."""
+        entry = {'Expenses': {}}
+        assert find_section_name(entry, 'Expenses') == 'Expenses'
+
+    def test_find_section_name_norwegian(self):
+        """Return actual Norwegian name used."""
+        entry = {'Kostnader': {}}
+        assert find_section_name(entry, 'Expenses') == 'Kostnader'
+
+    def test_find_section_name_missing(self):
+        """Return None when section not found."""
+        entry = {'Notes': {}}
+        assert find_section_name(entry, 'Expenses') is None
+
+    def test_time_tracking_alias(self):
+        """Find Time tracking by Norwegian alias."""
+        entry = {'Tidsbruk': {'__content__': 'hours'}}
+        assert find_section(entry, 'Time tracking') == {'__content__': 'hours'}
+
+    def test_time_tracking_case_variant(self):
+        """Find Time tracking by case variant."""
+        entry = {'Time Tracking': {'__content__': 'hours'}}
+        assert find_section(entry, 'Time tracking') == {'__content__': 'hours'}
