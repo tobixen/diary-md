@@ -1,24 +1,72 @@
 """diary-update: Add entries to diary files."""
 
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
 
 import click
 
-from diary_md.discover import get_current_diary_file
+from diary_md.discover import get_current_diary_file, get_diary_file_for_date
 from diary_md.git import git_commit, git_push
+from diary_md.models import SECTION_ALIASES, WEEKDAYS_NO
 from diary_md.parser import find_or_create_date_section, find_section_end, find_section_in_date
 
 
-def get_diary_file() -> Path:
-    """Get the diary file path for current year."""
-    return get_current_diary_file()
+def get_diary_file(target_date: datetime, directory: Path | None = None) -> Path:
+    """Get the diary file path for a given date and directory.
+
+    Tries to find an existing diary file matching the date first,
+    falls back to the default diary-YYYY.md pattern.
+    """
+    found = get_diary_file_for_date(target_date, directory)
+    if found and found.exists():
+        return found
+    return get_current_diary_file(directory)
 
 
-def format_date_header(dt: datetime) -> str:
-    """Format date for diary header (## Weekday YYYY-MM-DD)."""
-    return f"## {dt.strftime('%A %Y-%m-%d')}"
+def detect_diary_language(content: str) -> str:
+    """Detect the language of a diary file from its date headers.
+
+    Scans for Norwegian weekday names in ## headers.
+
+    Returns:
+        'no' for Norwegian, 'en' for English (default)
+    """
+    no_pattern = re.compile(
+        r'^## (?:' + '|'.join(WEEKDAYS_NO) + r') \d{4}-\d{2}-\d{2}',
+        re.MULTILINE,
+    )
+    if no_pattern.search(content):
+        return 'no'
+    return 'en'
+
+
+def format_date_header(dt: datetime, language: str = 'en') -> str:
+    """Format date for diary header (## Weekday YYYY-MM-DD).
+
+    Args:
+        dt: The date
+        language: 'en' for English, 'no' for Norwegian
+    """
+    if language == 'no':
+        weekday = WEEKDAYS_NO[dt.weekday()]
+    else:
+        weekday = dt.strftime('%A')
+    return f"## {weekday} {dt.strftime('%Y-%m-%d')}"
+
+
+def format_section_header(section_name: str, language: str = 'en') -> str:
+    """Format a ### section header, using the appropriate language.
+
+    For Norwegian, uses the first alias from SECTION_ALIASES.
+    """
+    if language == 'no':
+        canonical = section_name.title()
+        aliases = SECTION_ALIASES.get(canonical, [])
+        if aliases:
+            return f"### {aliases[0]}"
+    return f"### {section_name.title()}"
 
 
 def format_expense_line(amount: float, currency: str, expense_type: str, description: str) -> str:
@@ -41,13 +89,14 @@ def update_diary(
     with open(diary_file) as f:
         content = f.read()
 
+    language = detect_diary_language(content)
     lines = content.split("\n")
     date_line, date_exists = find_or_create_date_section(content, target_date)
 
     if not date_exists:
         # Create new date section with the entry
-        date_header = format_date_header(target_date)
-        section_header = f"### {section.title()}"
+        date_header = format_date_header(target_date, language)
+        section_header = format_section_header(section, language)
         new_block = [
             "",
             date_header,
@@ -65,12 +114,13 @@ def update_diary(
         if section_line is None:
             # Create section at end of date entry
             section_end = find_section_end(lines, date_line)
-            section_header = f"### {section.title()}"
+            section_header = format_section_header(section, language)
             new_block = [
                 "",
                 section_header,
                 "",
                 line,
+                "",
             ]
             lines = lines[:section_end] + new_block + lines[section_end:]
             action = f"Created new '{section}' section"
@@ -92,9 +142,9 @@ def update_diary(
         click.echo(f"Action: {action}")
         click.echo(f"Line: {line}")
         click.echo()
-        # Show context
+        # Show context around the added line
         for i, current_line in enumerate(lines):
-            if line in current_line or format_date_header(target_date) in current_line:
+            if current_line == line:
                 start = max(0, i - 2)
                 end = min(len(lines), i + 3)
                 click.echo("Context:")
@@ -127,14 +177,15 @@ def ensure_section_exists(
     with open(diary_file) as f:
         content = f.read()
 
+    language = detect_diary_language(content)
     lines = content.split("\n")
     date_line, date_exists = find_or_create_date_section(content, target_date)
     modified = False
 
     if not date_exists:
         # Create new date section
-        date_header = format_date_header(target_date)
-        section_header = f"### {section.title()}"
+        date_header = format_date_header(target_date, language)
+        section_header = format_section_header(section, language)
         new_block = [
             "",
             date_header,
@@ -151,7 +202,7 @@ def ensure_section_exists(
         if section_line is None:
             # Create section at end of date entry
             section_end = find_section_end(lines, date_line)
-            section_header = f"### {section.title()}"
+            section_header = format_section_header(section, language)
             new_block = [
                 "",
                 section_header,
@@ -187,10 +238,12 @@ def ensure_section_exists(
 @click.option('--currency', '-c', default='EUR', help='Currency (default: EUR)')
 @click.option('--type', '-t', 'expense_type', default='groceries', help='Expense type (default: groceries)')
 @click.option('--description', help="Description (e.g., 'Lidl (milk, bread)')")
+@click.option('--directory', type=click.Path(exists=True, file_okay=False, path_type=Path),
+              help='Directory to find diary files in (default: current directory)')
 @click.option('--commit', is_flag=True, help='Git commit after updating')
 @click.option('--push', is_flag=True, help='Git push after committing (implies --commit)')
 @click.option('--dry-run', '-n', is_flag=True, help='Show what would be done without modifying files')
-def update(section, date, line, amount, currency, expense_type, description, commit, push, dry_run):
+def update(section, date, line, amount, currency, expense_type, description, directory, commit, push, dry_run):
     """Add an entry to the diary."""
     # Parse date
     try:
@@ -198,7 +251,7 @@ def update(section, date, line, amount, currency, expense_type, description, com
     except ValueError as e:
         raise click.BadParameter(f"Invalid date format: {date} (expected YYYY-MM-DD)") from e
 
-    diary_file = get_diary_file()
+    diary_file = get_diary_file(target_date, directory)
 
     # Determine the line to add (if any)
     entry_line = None

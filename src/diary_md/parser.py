@@ -6,7 +6,14 @@ from pathlib import Path
 from typing import TextIO
 
 from diary_md.exceptions import DiaryParseError
-from diary_md.models import DATE_FORMAT, VALID_WEEKDAYS, WEEKDAY_TO_INDEX, WEEKDAYS_EN, ExpenseLine
+from diary_md.models import (
+    DATE_FORMAT,
+    SECTION_ALIASES,
+    VALID_WEEKDAYS,
+    WEEKDAY_TO_INDEX,
+    WEEKDAYS_EN,
+    ExpenseLine,
+)
 
 
 def markdown_to_dict(file: TextIO, level: int = 1) -> dict:
@@ -85,6 +92,9 @@ def markdown_to_dict(file: TextIO, level: int = 1) -> dict:
 def find_or_create_date_section(content: str, target_date: datetime) -> tuple[int, bool]:
     """Find existing date section or determine where to insert a new one.
 
+    Searches for the date string with any weekday prefix, supporting
+    both English and Norwegian diary formats.
+
     Args:
         content: Full file content
         target_date: The date to find or insert
@@ -92,18 +102,19 @@ def find_or_create_date_section(content: str, target_date: datetime) -> tuple[in
     Returns:
         Tuple of (line_number, section_exists)
     """
-    date_header = f"## {target_date.strftime('%A %Y-%m-%d')}"
+    date_str = target_date.strftime('%Y-%m-%d')
     lines = content.split("\n")
+
+    # Pattern matches any weekday name before the date (language-agnostic)
+    date_pattern = re.compile(r"^## \w+ (\d{4}-\d{2}-\d{2})")
 
     # Check if date already exists (may have itinerary after date)
     for i, line in enumerate(lines):
-        if line.strip().startswith(date_header):
+        match = date_pattern.match(line.strip())
+        if match and match.group(1) == date_str:
             return i, True
 
     # Find insertion point (chronological order)
-    # Pattern allows optional itinerary after date
-    date_pattern = re.compile(r"^## \w+ (\d{4}-\d{2}-\d{2})")
-
     for i, line in enumerate(lines):
         match = date_pattern.match(line.strip())
         if match:
@@ -115,8 +126,37 @@ def find_or_create_date_section(content: str, target_date: datetime) -> tuple[in
     return len(lines), False
 
 
+def _get_section_names(section_name: str) -> list[str]:
+    """Get all names to search for a section, including aliases.
+
+    Args:
+        section_name: Section name (e.g., 'expenses', 'Kostnader')
+
+    Returns:
+        List of possible section names to match against
+    """
+    names = {section_name.title()}
+
+    # Check if it's a canonical name
+    for canonical, aliases in SECTION_ALIASES.items():
+        if section_name.title() == canonical.title():
+            names.update(aliases)
+            break
+        # Check if it's an alias
+        for alias in aliases:
+            if section_name.lower() == alias.lower():
+                names.add(canonical)
+                names.update(aliases)
+                break
+
+    return list(names)
+
+
 def find_section_in_date(lines: list[str], start_line: int, section_name: str) -> int | None:
     """Find a section (### Section) within a date entry.
+
+    Checks section name aliases so that e.g. 'expenses' also matches
+    '### Kostnader' or '### Utgifter'.
 
     Args:
         lines: List of file lines
@@ -126,7 +166,8 @@ def find_section_in_date(lines: list[str], start_line: int, section_name: str) -
     Returns:
         Line number of section header, or None if not found
     """
-    section_header = f"### {section_name.title()}"
+    possible_names = _get_section_names(section_name)
+    possible_headers = {f"### {name.strip()}".lower() for name in possible_names}
     date_pattern = re.compile(r"^## \w+ \d{4}-\d{2}-\d{2}")
 
     for i in range(start_line + 1, len(lines)):
@@ -134,7 +175,7 @@ def find_section_in_date(lines: list[str], start_line: int, section_name: str) -
         # Stop if we hit the next date
         if date_pattern.match(line):
             return None
-        if line.lower() == section_header.lower():
+        if line.lower() in possible_headers:
             return i
 
     return None
