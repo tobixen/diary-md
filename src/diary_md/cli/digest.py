@@ -70,7 +70,32 @@ def get_config_for_diary(cfg: dict, diary_path: str) -> dict:
     return cfg
 
 
-@click.group()
+class DiaryGroup(click.Group):
+    """Group reporting diary parse errors as clean messages rather than tracebacks."""
+
+    def invoke(self, ctx):
+        try:
+            return super().invoke(ctx)
+        except DiaryParseError as e:
+            raise click.ClickException(str(e)) from e
+
+
+def get_diary_list(ctx) -> list[dict]:
+    """Return the parsed list of diary entries, parsing on first use.
+
+    Parsing validates date headers and chronology, so it is deferred until a
+    command actually asks for it — commands working on the raw section tree
+    (find-all-subsections, export-web-json) should not fail on a broken date
+    header elsewhere in the diary.
+    """
+    if 'diary_list' not in ctx.obj:
+        ctx.obj['diary_list'] = parse_diary_to_list(
+            ctx.obj['md_dict'], start=ctx.obj['start'], end=ctx.obj['end']
+        )
+    return ctx.obj['diary_list']
+
+
+@click.group(cls=DiaryGroup)
 @click.option('--start', help='Only show dates at or after this date', type=click.DateTime(formats=[DATE_FORMAT]))
 @click.option('--begin', 'start', help='alias for start', type=click.DateTime(formats=[DATE_FORMAT]))
 @click.option('--since', 'start', help='alias for start', type=click.DateTime(formats=[DATE_FORMAT]))
@@ -78,19 +103,36 @@ def get_config_for_diary(cfg: dict, diary_path: str) -> dict:
 @click.option('--end', help='Only show dates up until and including this date', type=click.DateTime(formats=[DATE_FORMAT]))
 @click.option('--to', 'end', help='alias for end', type=click.DateTime(formats=[DATE_FORMAT]))
 @click.option('--until', 'end', help='alias for end', type=click.DateTime(formats=[DATE_FORMAT]))
-@click.option('--diary', type=click.File('r'), default=(sys.stdin,), multiple=True)
+@click.option('--diary', type=click.File('r'), default=(sys.stdin,), multiple=True,
+              help='Diary file to read; repeat for several files. Defaults to stdin.')
 @click.pass_context
 def digest(ctx, diary, start, end):
-    """Analyze and extract information from markdown diary files."""
+    """Analyze and extract information from markdown diary files.
+
+    Diary files are given with --diary, which may be repeated:
+
+        diary-digest --diary diary-2025.md --diary diary-2026.md expenses
+
+    With no --diary option the diary is read from stdin, so the command hangs
+    waiting for input if nothing is piped in:
+
+        cat diary-2026.md | diary-digest expenses
+
+    Passing files with --diary is preferable to piping several of them in at
+    once: concatenated files are seen as one stream, so error messages lose
+    the file name and the entries must be in chronological order across the
+    whole concatenation.
+    """
     ctx.ensure_object(dict)
     ctx.obj['md_dict'] = {}
     ctx.obj['diary_paths'] = []
+    ctx.obj['start'] = start
+    ctx.obj['end'] = end
     for d in diary:
         ctx.obj['md_dict'].update(markdown_to_dict(d))
         # Track diary paths for config lookup
         if hasattr(d, 'name') and d.name != '<stdin>':
             ctx.obj['diary_paths'].append(d.name)
-    ctx.obj['diary_list'] = parse_diary_to_list(ctx.obj['md_dict'], start=start, end=end)
 
 
 @digest.command()
@@ -99,7 +141,7 @@ def digest(ctx, diary, start, end):
 def select_subsection(ctx, section):
     """Extract specific subsections from diary entries."""
     header = ""
-    for x in ctx.obj['diary_list']:
+    for x in get_diary_list(ctx):
         if x['trip'] != header:
             click.echo(f"# {x['trip']}")
             click.echo()
@@ -119,7 +161,7 @@ def select_subsection(ctx, section):
 @click.pass_context
 def export_json(ctx):
     """Export diary as JSON (list format)."""
-    click.echo(json.dumps(ctx.obj['diary_list']))
+    click.echo(json.dumps(get_diary_list(ctx)))
 
 
 @digest.command()
@@ -338,7 +380,7 @@ def expenses(ctx):
     unaccounted_content = []
     accounted = []
 
-    for entry in ctx.obj['diary_list']:
+    for entry in get_diary_list(ctx):
         expense_section = find_section(entry, 'Expenses')
         if expense_section is None:
             continue

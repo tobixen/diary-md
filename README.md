@@ -88,12 +88,18 @@ pip install -e ~/diary-md
 
 Analyze and extract information from markdown diary files.
 
-```bash
-# Summarize expenses (reads from stdin or use --diary)
-cat diary-2026.md | diary-digest expenses
+With no `--diary` option the diary is read from stdin — the command will sit
+waiting for input if nothing is piped in.
 
-# Use explicit diary file
+```bash
+# Use explicit diary file (preferred)
 diary-digest --diary diary-2026.md expenses
+
+# Several diary files: repeat --diary rather than concatenating them
+diary-digest --diary diary-2025.md --diary diary-2026.md find-all-subsections
+
+# Reading from stdin
+cat diary-2026.md | diary-digest expenses
 
 # Extract specific sections
 diary-digest --diary diary-2026.md select-subsection --section Maintenance
@@ -104,6 +110,10 @@ diary-digest --diary diary-2026.md --from 2026-01-01 --to 2026-01-31 expenses
 # Export for web viewer
 diary-digest --diary diary-2026.md export-web-json --pretty > diary.json
 ```
+
+Piping several files in at once works, but the concatenation is seen as a
+single stream: error messages lose the file name, and the entries must be in
+chronological order across the whole concatenation.
 
 ### diary-update
 

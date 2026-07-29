@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `diary-digest find-all-subsections` and `export-web-json` no longer abort on a
+  malformed date header; date parsing is now deferred to the commands needing it
+- `diary-digest` reports diary parse errors as a message instead of a traceback
+
 ### Changed
+- `diary-digest --help` now documents that the diary is read from stdin by default
 - Migrated build system from setuptools to Hatch with hatch-vcs
 - Added ruff for linting
 - Added pre-commit hooks
