@@ -1,6 +1,7 @@
 """diary-digest: Analyze and extract information from diary files."""
 
 import fnmatch
+import io
 import json
 import re
 import sys
@@ -13,6 +14,7 @@ from diary_md.exceptions import DiaryParseError
 from diary_md.exchange import get_exchange_rate
 from diary_md.models import find_section
 from diary_md.parser import markdown_to_dict, parse_diary_to_list
+from diary_md.redact import PublicPolicy, RedactionReport, public_text, redact_diary
 
 DATE_FORMAT = "%Y-%m-%d"
 
@@ -128,8 +130,15 @@ def digest(ctx, diary, start, end):
     ctx.obj['diary_paths'] = []
     ctx.obj['start'] = start
     ctx.obj['end'] = end
+    ctx.obj['diary_texts'] = []
     for d in diary:
-        ctx.obj['md_dict'].update(markdown_to_dict(d))
+        # Kept raw for the public export, which strips private fences before parsing
+        name = getattr(d, 'name', '<stream>')
+        text = d.read()
+        ctx.obj['diary_texts'].append((name, text))
+        stream = io.StringIO(text)
+        stream.name = name
+        ctx.obj['md_dict'].update(markdown_to_dict(stream))
         # Track diary paths for config lookup
         if hasattr(d, 'name') and d.name != '<stdin>':
             ctx.obj['diary_paths'].append(d.name)
@@ -164,131 +173,130 @@ def export_json(ctx):
     click.echo(json.dumps(get_diary_list(ctx)))
 
 
+def _web_day(day_header: str, day_data: dict) -> dict | None:
+    """One day in the web viewer format, or None if it has no content."""
+    date_match = re.search(r'20\d\d-\d\d-\d\d', day_header)
+    sections = {}
+    # Main day content (prose before any ### subsection)
+    main_content = day_data.get('__content__', '').strip()
+    if main_content:
+        sections[''] = main_content
+    for section_name in day_data:
+        if not section_name.startswith('__'):
+            sections[section_name] = day_data[section_name].get('__content__', '')
+    if not sections:
+        return None
+    return {
+        "date": date_match.group(0) if date_match else "",
+        "dateString": day_header,
+        "sections": sections,
+    }
+
+
+def _web_trip(title: str, days: dict) -> dict | None:
+    dates = [
+        d for header, data in days.items()
+        if not header.startswith('__') and isinstance(data, dict)
+        for d in [_web_day(header, data)] if d
+    ]
+    return {"title": title, "dates": dates} if dates else None
+
+
+def web_json(md_dict: dict) -> dict:
+    """The diary in the hierarchical trip/date/section format of diary-viewer.html."""
+    def looks_like_date(key):
+        return bool(re.match(r'^[A-Za-zæøåÆØÅ]+ 20\d\d-\d\d-\d\d', key))
+
+    # Top-level keys may be date headers directly, with no trip wrapper
+    non_meta_keys = [k for k in md_dict if not k.startswith('__')]
+    if non_meta_keys and all(looks_like_date(k) for k in non_meta_keys):
+        trips = [_web_trip("Diary", md_dict)]
+    else:
+        trips = [
+            _web_trip(header, data) for header, data in md_dict.items()
+            if not header.startswith('__') and isinstance(data, dict)
+        ]
+    return {"trips": [t for t in trips if t]}
+
+
+def public_diary(ctx, policy_file: Path, places: Path | None) -> tuple[dict, RedactionReport]:
+    """Parse the diaries again with private fences and comments stripped, and redact them."""
+    try:
+        policy = PublicPolicy.load(policy_file)
+    except ValueError as e:
+        raise click.ClickException(str(e)) from e
+    md_dict: dict = {}
+    for name, text in ctx.obj['diary_texts']:
+        stream = io.StringIO(public_text(text))
+        stream.name = name
+        md_dict.update(markdown_to_dict(stream))
+    known = set()
+    if places:
+        with open(places, encoding='utf-8') as f:
+            for place, aliases in json.load(f).items():
+                known |= {place, *aliases}
+    try:
+        return redact_diary(md_dict, policy, known_words=known)
+    except ValueError as e:
+        raise click.ClickException(f'{policy_file}: {e}') from e
+
+
+POLICY_HELP = 'Public policy JSON: people registry, public/private sections, allowed words, reviewed_up_to'
+PLACES_HELP = 'Place aliases JSON (as used by the viewer); its names count as known words'
+
+
 @digest.command()
 @click.pass_context
 @click.option('--pretty', is_flag=True, help='Pretty-print JSON output')
-def export_web_json(ctx, pretty):
+@click.option('--public', 'policy', type=click.Path(exists=True, dir_okay=False, path_type=Path),
+              help=f'Export the public version. {POLICY_HELP}')
+@click.option('--places', type=click.Path(exists=True, dir_okay=False, path_type=Path), help=PLACES_HELP)
+@click.option('--allow-unknown', is_flag=True,
+              help='With --public: export even if unknown capitalised words remain')
+def export_web_json(ctx, pretty, policy, places, allow_unknown):
     """Export diary as JSON for web viewer.
 
     Outputs JSON in the format expected by diary-viewer.html with
     hierarchical trip/date/section structure.
+
+    With --public, only the reviewed, whitelisted and name-redacted part of
+    the diary is exported; see check-public.  The report goes to stderr, and
+    unknown capitalised words make the export fail unless --allow-unknown.
     """
-    md_dict = ctx.obj['md_dict']
-
-    # Helper function to check if a key looks like a date header
-    def looks_like_date(key):
-        import re
-        return bool(re.match(r'^[A-Za-zæøåÆØÅ]+ 20\d\d-\d\d-\d\d', key))
-
-    # Parse structure into trips
-    trips = []
-
-    # Check if top-level keys are date headers (no trip wrapper)
-    non_meta_keys = [k for k in md_dict if not k.startswith('__')]
-    direct_dates = non_meta_keys and all(looks_like_date(k) for k in non_meta_keys)
-
-    if direct_dates:
-        # Top-level is date headers directly - create single trip
-        trip = {
-            "title": "Diary",
-            "dates": []
-        }
-
-        for day_header in md_dict:
-            if day_header.startswith('__'):
-                continue
-
-            # Extract date from header (e.g., "Tuesday 2026-01-21" -> "2026-01-21")
-            import re
-            date_match = re.search(r'20\d\d-\d\d-\d\d', day_header)
-            date_str = date_match.group(0) if date_match else ""
-
-            day_data = md_dict[day_header]
-            if not isinstance(day_data, dict):
-                continue
-
-            # Build sections dict
-            sections = {}
-
-            # Include main day content (prose before any ### subsection)
-            main_content = day_data.get('__content__', '').strip()
-            if main_content:
-                sections[''] = main_content
-
-            for section_name in day_data:
-                if section_name.startswith('__'):
-                    continue
-                sections[section_name] = day_data[section_name].get('__content__', '')
-
-            if sections:
-                trip["dates"].append({
-                    "date": date_str,
-                    "dateString": day_header,
-                    "sections": sections
-                })
-
-        if trip["dates"]:
-            trips.append(trip)
-
+    if not policy and (places or allow_unknown):
+        raise click.UsageError('--places and --allow-unknown only apply with --public')
+    if policy:
+        md_dict, report = public_diary(ctx, policy, places)
+        if report.format():
+            click.echo(report.format(), err=True)
+        if report.unknown_tokens and not allow_unknown:
+            raise click.ClickException('unknown capitalised words; add them to the policy or pass --allow-unknown')
     else:
-        # Normal structure: trip headers containing date headers
-        for trip_header in md_dict:
-            if trip_header.startswith('__'):
-                continue
-
-            trip = {
-                "title": trip_header,
-                "dates": []
-            }
-
-            trip_data = md_dict[trip_header]
-            if not isinstance(trip_data, dict):
-                continue
-
-            for day_header in trip_data:
-                if day_header.startswith('__'):
-                    continue
-
-                # Extract date from header
-                import re
-                date_match = re.search(r'20\d\d-\d\d-\d\d', day_header)
-                date_str = date_match.group(0) if date_match else ""
-
-                day_data = trip_data[day_header]
-                if not isinstance(day_data, dict):
-                    continue
-
-                # Build sections dict
-                sections = {}
-
-                # Include main day content (prose before any ### subsection)
-                main_content = day_data.get('__content__', '').strip()
-                if main_content:
-                    sections[''] = main_content
-
-                for section_name in day_data:
-                    if section_name.startswith('__'):
-                        continue
-                    sections[section_name] = day_data[section_name].get('__content__', '')
-
-                if sections:
-                    trip["dates"].append({
-                        "date": date_str,
-                        "dateString": day_header,
-                        "sections": sections
-                    })
-
-            if trip["dates"]:
-                trips.append(trip)
-
-    # Build final output
-    output = {"trips": trips}
-
+        md_dict = ctx.obj['md_dict']
+    output = web_json(md_dict)
     if pretty:
         click.echo(json.dumps(output, indent=2, ensure_ascii=False))
     else:
         click.echo(json.dumps(output, ensure_ascii=False))
 
+
+@digest.command()
+@click.pass_context
+@click.option('--policy', required=True, type=click.Path(exists=True, dir_okay=False, path_type=Path),
+              help=POLICY_HELP)
+@click.option('--places', type=click.Path(exists=True, dir_okay=False, path_type=Path), help=PLACES_HELP)
+def check_public(ctx, policy, places):
+    """Report what the public export would leave for a human to classify.
+
+    Exits 1 if there are unknown capitalised words — usable as a pre-commit
+    hook.  Unclassified sections and days mentioning children are reported
+    but do not fail: the former are left out anyway, the latter are a reminder.
+    """
+    _, report = public_diary(ctx, policy, places)
+    if report.format():
+        click.echo(report.format())
+    if report.unknown_tokens:
+        ctx.exit(1)
 
 @digest.command()
 @click.pass_context

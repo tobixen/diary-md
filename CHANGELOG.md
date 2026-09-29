@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Public export: `diary-digest export-web-json --public POLICY` leaves out
+  unreviewed days, non-whitelisted sections and `<!-- private -->` fenced
+  paragraphs, and replaces names from a people registry; `diary-digest
+  check-public` reports unclassified sections and unknown capitalised words
+
 ### Fixed
 - `diary-digest find-all-subsections` and `export-web-json` no longer abort on a
   malformed date header; date parsing is now deferred to the commands needing it

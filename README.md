@@ -115,6 +115,61 @@ Piping several files in at once works, but the concatenation is seen as a
 single stream: error messages lose the file name, and the entries must be in
 chronological order across the whole concatenation.
 
+#### Public export
+
+Only `export-web-json --public` and `check-public` redact; `export-json` and
+`select-subsection` print the diary as it is.
+
+A diary names people and has sections nobody else should read.  With
+`--public POLICY`, `export-web-json` exports only what the policy allows, and
+`check-public` reports what still needs a decision (exit status 1 if there are
+unknown capitalised words, so it works as a pre-commit hook):
+
+```bash
+diary-digest --diary diary-2026.md check-public --policy ~/.config/diary-md/public.json --places aliases.json
+diary-digest --diary diary-2026.md export-web-json --public ~/.config/diary-md/public.json > public/diary.json
+```
+
+The policy is a JSON file.  It contains real names, so keep it out of any
+published repository:
+
+```json
+{
+  "reviewed_up_to": "2026-06-30",
+  "public_sections": ["Maintenance", "Plans", "Time and positions"],
+  "private_sections": ["Private", "Health", "Expenses"],
+  "allow_words": ["Solveig", "Lidl"],
+  "people": [
+    {"name": "Kari", "policy": "pseudonym", "pseudonym": "Anna", "aliases": ["Kari-Mari"]},
+    {"name": "Hans", "policy": "initial"},
+    {"name": "Per", "policy": "public"},
+    {"name": "Ola", "policy": "child", "anonymous": "a child"}
+  ]
+}
+```
+
+* Days after `reviewed_up_to` are left out; moving it is the review step.
+  A day header without a valid `YYYY-MM-DD` date is an error, and so is an
+  undated header that does not hold dated days (a chapter).
+* Only `public_sections` are kept (section name aliases count).  Sections in
+  neither list are left out *and* reported, so an unclassified section never
+  leaks.  The free text of a day is kept.
+* Paragraphs between `<!-- private -->` and `<!-- /private -->` lines are
+  removed (case does not matter, and `<!-- private: why -->` is fine); an
+  unbalanced fence, or a private marker that is not a line of its own, is an
+  error.  Every other HTML comment is removed too.
+* Names are replaced by policy: `public` as written, `pseudonym`, `initial`
+  ("H."), `anonymous` ("someone", or the `anonymous` text), `child` (like
+  anonymous, and the days mentioning them are listed for review).  Genitive
+  `-s`, `-'s` and `-’s` forms are handled; list other spellings as `aliases`.
+  Names are matched as written, with a capital first letter.
+* Every capitalised word left in the output is checked: registered names,
+  pseudonyms, `allow_words`, place names from `--places` (multi-word entries
+  as whole phrases), weekdays and months are known, and so is a word at the
+  start of a sentence that the diary also uses in lower case.  Anything else
+  is reported, and blocks the export unless `--allow-unknown` is given — a name
+  missing from the registry turns up there.
+
 ### diary-update
 
 Add entries to diary files.

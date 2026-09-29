@@ -203,3 +203,81 @@ class TestDigestExportJson:
         # Should be valid JSON (list)
         assert result.output.strip().startswith('[')
         assert result.output.strip().endswith(']')
+
+
+class TestDigestPublic:
+    """Tests for the public (redacted) export and its check."""
+
+    DIARY = """\
+# Fake Voyage
+
+## Monday 2026-06-01 - Harbourtown
+
+Ingrid fixed the winch with Zyxwort.
+
+### Maintenance
+
+Winch serviced.
+
+<!-- private -->
+Nor this.
+<!-- /private -->
+
+### Private
+
+Nobody reads this.
+"""
+
+    @pytest.fixture
+    def files(self, tmp_path):
+        diary = tmp_path / 'diary.md'
+        diary.write_text(self.DIARY)
+        policy = tmp_path / 'public.json'
+        policy.write_text(json.dumps({
+            'reviewed_up_to': '2026-06-30',
+            'public_sections': ['Maintenance'],
+            'private_sections': ['Private'],
+            'allow_words': ['Harbourtown'],
+            'people': [{'name': 'Ingrid', 'policy': 'pseudonym', 'pseudonym': 'Astrid'}],
+        }))
+        return diary, policy
+
+    def test_check_public_reports_unknown_tokens(self, files):
+        diary, policy = files
+        result = CliRunner().invoke(digest, ['--diary', str(diary), 'check-public', '--policy', str(policy)])
+        assert result.exit_code == 1
+        assert 'Zyxwort' in result.output
+
+    def test_export_refuses_with_unknown_tokens(self, files):
+        diary, policy = files
+        result = CliRunner().invoke(digest, ['--diary', str(diary), 'export-web-json', '--public', str(policy)])
+        assert result.exit_code != 0
+        assert 'Zyxwort' in result.output
+        assert 'Ingrid' not in result.output
+
+    def test_export_public(self, files):
+        diary, policy = files
+        result = CliRunner().invoke(
+            digest, ['--diary', str(diary), 'export-web-json', '--public', str(policy), '--allow-unknown'])
+        assert result.exit_code == 0, result.output
+        data = json.loads(result.stdout)
+        day = data['trips'][0]['dates'][0]
+        assert set(day['sections']) == {'', 'Maintenance'}
+        assert 'Astrid' in day['sections']['']
+        assert 'Ingrid' not in result.stdout
+        assert 'Nor this' not in result.stdout
+
+    def test_bad_policy_is_a_clean_error(self, files, tmp_path):
+        diary, _ = files
+        bad = tmp_path / 'bad.json'
+        bad.write_text(json.dumps({'people': [{'name': 'Ingrid', 'policy': 'sometimes'}]}))
+        result = CliRunner().invoke(digest, ['--diary', str(diary), 'check-public', '--policy', str(bad)])
+        assert result.exit_code == 1
+        assert 'sometimes' in result.output
+        assert not isinstance(result.exception, ValueError)
+
+    def test_public_options_need_public(self, files):
+        diary, policy = files
+        result = CliRunner().invoke(digest, ['--diary', str(diary), 'export-web-json', '--allow-unknown'])
+        assert result.exit_code == 2
+        assert '--public' in result.output
