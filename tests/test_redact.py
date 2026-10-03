@@ -249,3 +249,28 @@ class TestPolicyFile:
         assert policy.reviewed_up_to == datetime(2026, 6, 1)
         assert policy.people[1].replacement == 'a child'
         assert policy.allow_words == ['Harbourtown']
+
+
+class TestVerbatimContent:
+    """Section text is the source verbatim; the redaction pass must still hold."""
+
+    @pytest.mark.parametrize('breaker', ['\x0c', '\x0b', '\x85', ' ', ' ', '\x1c'])
+    def test_private_text_stays_in_its_section(self, policy, breaker):
+        text = ("## Monday 2026-06-01\n\n### Private\n\n"
+                f"one{breaker}two\n\nsecret line\n\n### Maintenance\n\nGreased the winch.\n")
+        out, _ = redact_diary(parse(text), policy)
+        maintenance = out['Monday 2026-06-01']['Maintenance']['__content__']
+        assert maintenance == 'Greased the winch.'
+
+    def test_html_block_in_public_section_is_redacted_and_checked(self, policy):
+        text = ("## Monday 2026-06-01\n\n### Maintenance\n\n"
+                "<div>Ingrid and Zyxwort</div>\n")
+        out, report = redact_diary(parse(text), policy)
+        assert out['Monday 2026-06-01']['Maintenance']['__content__'] == '<div>Astrid and Zyxwort</div>'
+        assert 'Zyxwort' in report.unknown_tokens
+
+    @pytest.mark.parametrize('line', ['+ Quay was wet.', '| Quay | wet |'])
+    def test_plus_bullet_and_table_cell_start_a_sentence(self, policy, line):
+        text = f"## Monday 2026-06-01\n\nthe quay was dry.\n\n{line}\n"
+        _, report = redact_diary(parse(text), policy)
+        assert 'Quay' not in report.unknown_tokens

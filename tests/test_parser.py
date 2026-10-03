@@ -250,3 +250,23 @@ Paragraph text.
         assert '__list_items__' in result['Header']
         assert len(result['Header']['__list_items__']) == 2
         assert result['Header']['__list_items__'][0]['text'] == 'Item 1'
+
+
+class TestContentIsComplete:
+    """__content__ is the section's source text: what an exporter prints is all there is."""
+
+    def test_table_in_content(self):
+        content = "# Trip\n\n## Monday 2026-01-20\n\nLogs:\n\n| Time | COG |\n|---|---|\n| 1300 | 070 |\n"
+        day = markdown_to_dict(StringIO(content))['Trip']['Monday 2026-01-20']
+        assert '| 1300 | 070 |' in day['__content__']
+
+    def test_dash_bullet_expense_counted(self, tmp_path):
+        from click.testing import CliRunner
+
+        from diary_md.cli.digest import digest
+
+        diary = tmp_path / 'diary-2026.md'
+        diary.write_text("# Trip\n\n## Tuesday 2026-01-20\n\n### Expenses\n\n- EUR 15.00 - groceries - Lidl\n")
+        result = CliRunner().invoke(digest, ['--diary', str(diary), 'expenses'])
+        assert result.exit_code == 0, result.output
+        assert 'Total expenses: EUR 15.00' in result.output

@@ -411,7 +411,7 @@ def expenses(ctx):
                 expense = expense.strip()
                 if not expense:
                     continue
-            findings = re.match(r"^\* ([A-Z]{3}) (-?\d+(?:\.\d+)?) - (.*)$", expense)
+            findings = re.match(r"^[*+-] ([A-Z]{3}) (-?\d+(?:\.\d+)?) - (.*)$", expense)
             if findings:
                 accounted.append((findings.group(1), findings.group(2), findings.group(3), expense_date))
             else:

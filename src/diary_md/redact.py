@@ -48,7 +48,7 @@ _FENCE_OPEN = re.compile(r'^\s*<!--\s*private\b(?:(?!-->).)*-->\s*$', re.IGNOREC
 _FENCE_CLOSE = re.compile(r'^\s*<!--\s*/private\s*-->\s*$', re.IGNORECASE)
 _FENCE_ANY = re.compile(r'<!--\s*/?private\b', re.IGNORECASE)
 _COMMENT = re.compile(r'<!--.*?-->', re.DOTALL)
-_SENTENCE_START = re.compile(r'(?:^|[.!?:\n])[\s"“«(\'*#>-]*$')
+_SENTENCE_START = re.compile(r'(?:^|[.!?:|\n])[\s"“«(\'*+#>-]*$')
 _DATE_IN_HEADER = re.compile(r'\b(\d{4}-\d{2}-\d{2})\b')
 _WORD = re.compile(r"[^\W\d_][\w'’-]*")
 

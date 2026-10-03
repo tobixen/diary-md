@@ -211,3 +211,79 @@ Some paragraph.
         assert 'Some paragraph.' in content_str
         assert '* Item 1' in content_str
         assert '* Item 2' in content_str
+
+
+class TestContentIsVerbatim:
+    """A section's content is its source text, so nothing is dropped or reordered."""
+
+    def _content(self, body: str) -> str:
+        return md_adapter.parse_markdown_string(f"# Day\n\n{body}\n## Next\n")[0].content
+
+    def test_order_of_paragraphs_and_lists_kept(self):
+        body = "First.\n\n* Item 1\n\nSecond.\n\n* Item 2\n"
+        assert self._content(body) == body.strip()
+
+    def test_table_kept(self):
+        body = "Logs:\n\n| Time | COG |\n|------|-----|\n| 1300 | 070 |\n"
+        assert '| 1300 | 070 |' in self._content(body)
+
+    def test_code_block_kept(self):
+        body = "```\n# not a heading\n```\n"
+        assert self._content(body) == body.strip()
+
+    def test_html_block_kept(self):
+        assert '<div>boxed</div>' in self._content("<div>boxed</div>\n")
+
+    def test_multi_paragraph_list_item_kept(self):
+        body = "* Item\n\n  continued here\n* Next\n"
+        assert 'continued here' in self._content(body)
+
+    def test_deeply_nested_list_kept(self):
+        body = "* one\n  * two\n    * three\n      * four\n"
+        assert self._content(body) == body.strip()
+
+    def test_content_stops_at_subsection(self):
+        sections = md_adapter.parse_markdown_string("# Day\n\nIntro.\n\n## Sub\n\nInside.\n")
+        assert sections[0].content == 'Intro.'
+        assert sections[0].subsections[0].content == 'Inside.'
+
+    def test_setext_underline_is_not_a_heading(self):
+        sections = md_adapter.parse_markdown_string("# Day\n\nSome text\n---\n\nMore text\n")
+        assert sections[0].subsections == []
+        assert 'Some text' in sections[0].content
+        assert 'More text' in sections[0].content
+
+    def test_heading_inside_list_is_not_a_section(self):
+        sections = md_adapter.parse_markdown_string("# Day\n\n* # Odd item\n* other\n")
+        assert sections[0].subsections == []
+        assert '# Odd item' in sections[0].content
+
+
+class TestStructuredLists:
+    """The structured view of lists loses no item text."""
+
+    def test_multi_paragraph_item(self):
+        sections = md_adapter.parse_markdown_string("# S\n\n* first\n\n  second\n* next\n")
+        assert sections[0].list_items[0]['text'] == 'first\n\nsecond'
+
+    def test_ordered_list(self):
+        sections = md_adapter.parse_markdown_string("# S\n\n1. one\n2. two\n")
+        assert [i['text'] for i in sections[0].list_items] == ['one', 'two']
+
+    def test_deep_nesting_in_items(self):
+        sections = md_adapter.parse_markdown_string("# S\n\n* a\n  * b\n    * c\n")
+        assert md_adapter.get_all_list_items(sections[0]) == ['a', 'b', 'c']
+
+
+class TestContentEdges:
+    def test_whitespace_only_edge_lines_dropped(self):
+        sections = md_adapter.parse_markdown_string("# A\n\n   \n  text  \n \n")
+        assert sections[0].content == '  text  '
+
+    def test_indented_code_keeps_its_indent(self):
+        sections = md_adapter.parse_markdown_string("# A\n\n    code line\n")
+        assert sections[0].content == '    code line'
+
+    def test_crlf_line_endings(self):
+        sections = md_adapter.parse_markdown_string("# A\r\n\r\none\r\n# B\r\n\r\ntwo\r\n")
+        assert [s.content for s in sections] == ['one', 'two']

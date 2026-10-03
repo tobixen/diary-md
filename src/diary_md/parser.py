@@ -27,7 +27,7 @@ def markdown_to_dict(file: TextIO, level: int = 1) -> dict:
     and values are dicts containing subsection headers, etc.
 
     Special keys:
-        __content__: Text content within a section (paragraphs + list items)
+        __content__: Source text of a section, up to its first subsection
         __paragraphs__: List of paragraph strings (new in v2)
         __list_items__: List of list item dicts (new in v2)
         __file_name__: Name of the source file
@@ -52,20 +52,8 @@ def markdown_to_dict(file: TextIO, level: int = 1) -> dict:
         """Convert a MarkdownSection to the expected dict format."""
         result: dict = {}
 
-        # Add content in the original format for backward compatibility
-        content_parts = []
-        for para in section.paragraphs:
-            content_parts.append(para)
-            content_parts.append('')
-
-        for item in section.list_items:
-            content_parts.append(f"* {item['text']}")
-            for nested in item.get('nested', []):
-                content_parts.append(f"  * {nested['text']}")
-
-        content_str = '\n'.join(content_parts)
-        if content_str:
-            result['__content__'] = content_str
+        if section.content:
+            result['__content__'] = section.content
 
         # Add new structured data for v2 consumers
         if section.paragraphs:

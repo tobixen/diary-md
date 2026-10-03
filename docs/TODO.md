@@ -20,10 +20,8 @@
   and `javascript:` links through, section names and titles are interpolated
   unescaped, and search highlighting runs regexes over the finished markup
   (searching for "class" breaks it).  Escape before the markdown transforms,
-  allow only http(s)/relative links, highlight text nodes only.
-* The markdown-it adapter drops content: code blocks, tables and HTML blocks,
-  all but the last paragraph of a multi-paragraph list item, lists nested
-  deeper than two levels; paragraph/list order is lost, and a setext `---`
-  underline makes a heading.  Capture the other block types (or raise).
+  allow only http(s)/relative links, highlight text nodes only.  Since a
+  section's content is its source text, whole HTML blocks and fenced code
+  reach it too, also in `--public` output (`#` lines in code render as headings).
 * `diary-update` falls back to the current year's diary file when no file
   matches the target date; it should use the target date's year.
