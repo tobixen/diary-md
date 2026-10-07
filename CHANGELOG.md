@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   check-public` reports unclassified sections and unknown capitalised words
 
 ### Fixed
+- `diary-update` falls back to the target date's year file (`diary-YYYY.md`)
+  rather than the current year's when no diary file covers the date
 - `diary-digest expenses` accepts `-` and `+` bullets as well as `*`
 - `diary-digest find-all-subsections` and `export-web-json` no longer abort on a
   malformed date header; date parsing is now deferred to the commands needing it

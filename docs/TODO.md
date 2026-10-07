@@ -23,5 +23,3 @@
   allow only http(s)/relative links, highlight text nodes only.  Since a
   section's content is its source text, whole HTML blocks and fenced code
   reach it too, also in `--public` output (`#` lines in code render as headings).
-* `diary-update` falls back to the current year's diary file when no file
-  matches the target date; it should use the target date's year.

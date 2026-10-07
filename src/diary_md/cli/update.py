@@ -7,7 +7,7 @@ from pathlib import Path
 
 import click
 
-from diary_md.discover import get_current_diary_file, get_diary_file_for_date
+from diary_md.discover import get_diary_file_for_date, get_year_diary_file
 from diary_md.git import git_commit, git_push
 from diary_md.models import SECTION_ALIASES, WEEKDAYS_NO
 from diary_md.parser import find_or_create_date_section, find_section_end, find_section_in_date
@@ -17,12 +17,12 @@ def get_diary_file(target_date: datetime, directory: Path | None = None) -> Path
     """Get the diary file path for a given date and directory.
 
     Tries to find an existing diary file matching the date first,
-    falls back to the default diary-YYYY.md pattern.
+    falls back to diary-YYYY.md for the target date's year.
     """
     found = get_diary_file_for_date(target_date, directory)
     if found and found.exists():
         return found
-    return get_current_diary_file(directory)
+    return get_year_diary_file(target_date.year, directory)
 
 
 def detect_diary_language(content: str) -> str:

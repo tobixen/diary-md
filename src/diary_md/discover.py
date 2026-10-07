@@ -104,13 +104,16 @@ def get_diary_file_for_date(
     return files[0] if files else None
 
 
-def get_current_diary_file(directory: Path | None = None) -> Path:
-    """Get the diary file for current year, creating path if needed.
+def get_year_diary_file(year: int, directory: Path | None = None) -> Path:
+    """Get the path to diary-YYYY.md for the given year.
 
-    Returns path to diary-YYYY.md in the specified directory.
+    The file need not exist.  Defaults to the current working directory.
     """
     if directory is None:
         directory = Path.cwd()
-
-    year = datetime.now().year
     return directory / f"diary-{year}.md"
+
+
+def get_current_diary_file(directory: Path | None = None) -> Path:
+    """Get the path to diary-YYYY.md for the current year; see :func:`get_year_diary_file`."""
+    return get_year_diary_file(datetime.now().year, directory)

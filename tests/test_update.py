@@ -6,6 +6,7 @@ from diary_md.cli.update import (
     detect_diary_language,
     format_date_header,
     format_section_header,
+    get_diary_file,
     update_diary,
 )
 from diary_md.parser import find_or_create_date_section, find_section_in_date
@@ -243,3 +244,19 @@ class TestUpdateDiaryNorwegian:
         content = diary_file.read_text()
         assert "## Torsdag 2026-02-05" in content
         assert "### Kostnader" in content
+
+
+class TestGetDiaryFile:
+    """Test choosing the diary file to update."""
+
+    def test_falls_back_to_target_year(self, tmp_path):
+        """Without a matching file, use the target date's year, not today's."""
+        (tmp_path / f"diary-{datetime.now().year}.md").write_text("")
+        result = get_diary_file(datetime(2019, 6, 1), tmp_path)
+        assert result == tmp_path / "diary-2019.md"
+
+    def test_uses_existing_matching_file(self, tmp_path):
+        """An existing file covering the date wins over the fallback."""
+        (tmp_path / "diary-2019.md").write_text("")
+        result = get_diary_file(datetime(2019, 6, 1), tmp_path)
+        assert result == tmp_path / "diary-2019.md"
