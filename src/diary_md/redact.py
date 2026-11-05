@@ -5,7 +5,11 @@ read.  The public version is made by one pass over the parsed section tree, so
 every exporter publishes the same thing:
 
 * whole days after ``reviewed_up_to`` are left out: moving that date is the
-  human review step, and it also keeps the current position off the web;
+  human review step, and it also keeps the current position off the web.
+  Days before ``public_from``, if set, are left out too, so that the diary
+  can be reviewed and published a period at a time.  A chapter's own text
+  is kept only if none of its days is before ``public_from``, and a chapter
+  left with no days is dropped;
 * only whitelisted 3rd-level sections are kept.  Blacklisted ones are dropped
   silently, anything unlisted is dropped *and* reported, so that it gets
   classified.  Unlisted means private, which keeps it fail-closed;
@@ -94,19 +98,20 @@ class Person:
 
 @dataclass
 class PublicPolicy:
-    """What may be published: people, sections, known words and the review date."""
+    """What may be published: people, sections, known words and the published period."""
 
     people: list[Person] = field(default_factory=list)
     public_sections: list[str] = field(default_factory=list)
     private_sections: list[str] = field(default_factory=list)
     allow_words: list[str] = field(default_factory=list)
     reviewed_up_to: datetime | None = None
+    public_from: datetime | None = None
 
     @classmethod
     def load(cls, path: Path) -> 'PublicPolicy':
         """Load a policy from a JSON file with the same keys as the fields.
 
-        ``reviewed_up_to`` is a YYYY-MM-DD string, ``people`` a list of
+        ``reviewed_up_to`` and ``public_from`` are YYYY-MM-DD strings, ``people`` a list of
         objects with the fields of :class:`Person`.
 
         Any problem with the file is raised as ValueError naming the file.
@@ -115,12 +120,14 @@ class PublicPolicy:
             with open(path, encoding='utf-8') as f:
                 data = json.load(f)
             reviewed = data.get('reviewed_up_to')
+            public_from = data.get('public_from')
             return cls(
                 people=[Person(**p) for p in data.get('people', [])],
                 public_sections=data.get('public_sections', []),
                 private_sections=data.get('private_sections', []),
                 allow_words=data.get('allow_words', []),
                 reviewed_up_to=datetime.strptime(reviewed, DATE_FORMAT) if reviewed else None,
+                public_from=datetime.strptime(public_from, DATE_FORMAT) if public_from else None,
             )
         except (ValueError, TypeError, AttributeError) as e:
             raise ValueError(f'{path}: {e}') from e
@@ -246,7 +253,7 @@ def _day_date(header: str) -> datetime | None:
 
 
 def _redact_days(tree: dict, policy: PublicPolicy, report: RedactionReport, chapter: str | None) -> dict:
-    """Keep the reviewed days of one level; any other header there is an error."""
+    """Keep the published days of one level; any other header there is an error."""
     out = {}
     for header, value in tree.items():
         if header.startswith('__') or not isinstance(value, dict):
@@ -256,7 +263,7 @@ def _redact_days(tree: dict, policy: PublicPolicy, report: RedactionReport, chap
         if date is None:
             where = f' (in chapter {chapter})' if chapter else ''
             raise DiaryParseError(f'header without a date{where}: {header}')
-        if date <= policy.reviewed_up_to:
+        if date <= policy.reviewed_up_to and not (policy.public_from and date < policy.public_from):
             out[header] = _redact_day(value, policy, report)
     return out
 
@@ -277,7 +284,14 @@ def _redact_level(tree: dict, policy: PublicPolicy, report: RedactionReport) -> 
         if header.startswith('__') or not isinstance(value, dict) or _day_date(header) is not None:
             out.update(_redact_days({header: value}, policy, report, None))
         elif _is_chapter(value):
-            out[header] = _redact_days(value, policy, report, header)
+            days = _redact_days(value, policy, report, header)
+            if not any(not k.startswith('__') for k in days):
+                continue
+            first = min(_day_date(k) for k, v in value.items() if not k.startswith('__') and isinstance(v, dict))
+            if policy.public_from and first < policy.public_from:
+                # the chapter's own text was written before its first day: keep only the days
+                days = {k: v for k, v in days.items() if not k.startswith('__') or k == '__file_name__'}
+            out[header] = days
         else:
             _redact_days(value, policy, report, header)  # raises on the first undated child
             raise DiaryParseError(f'header without a date, and no dated days under it: {header}')
@@ -361,6 +375,8 @@ def redact_diary(
     """
     if policy.reviewed_up_to is None:
         raise ValueError('the policy has no reviewed_up_to date; nothing can be published before review')
+    if policy.public_from and policy.public_from > policy.reviewed_up_to:
+        raise ValueError('public_from is after reviewed_up_to; nothing would be published')
     report = RedactionReport()
     filtered = _redact_level(copy.deepcopy(md_dict), policy, report)
 

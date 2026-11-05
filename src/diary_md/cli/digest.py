@@ -241,7 +241,7 @@ def public_diary(ctx, policy_file: Path, places: Path | None) -> tuple[dict, Red
         raise click.ClickException(f'{policy_file}: {e}') from e
 
 
-POLICY_HELP = 'Public policy JSON: people registry, public/private sections, allowed words, reviewed_up_to'
+POLICY_HELP = 'Public policy JSON: people registry, public/private sections, allowed words, reviewed_up_to, public_from'
 PLACES_HELP = 'Place aliases JSON (as used by the viewer); its names count as known words'
 
 

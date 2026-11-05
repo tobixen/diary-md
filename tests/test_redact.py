@@ -158,6 +158,48 @@ class TestRedactDiary:
             'Monday 2026-06-01 - Harbourtown - Fishbay'
         ]
 
+    def test_public_from_lower_bound(self, policy):
+        policy.reviewed_up_to = datetime(2026, 6, 2)
+        policy.public_from = datetime(2026, 6, 2)
+        out, report = redact_diary(parse(DIARY), policy)
+        assert [k for k in out['Fake Voyage'] if not k.startswith('__')] == ['Tuesday 2026-06-02 - Fishbay']
+        # sections of days left out are not reported
+        assert not report.unclassified_sections
+        # the chapter's intro was written before public_from
+        assert '__content__' not in out['Fake Voyage']
+        assert 'on board' not in json.dumps(out)
+
+    def test_chapter_intro_list_left_out_when_cut(self, policy):
+        text = "# Fake Voyage\n\n* Intro bullet\n\n## Monday 2026-06-01\n\nx\n\n## Tuesday 2026-06-02\n\ny\n"
+        policy.reviewed_up_to = datetime(2026, 6, 2)
+        policy.public_from = datetime(2026, 6, 2)
+        out, _ = redact_diary(parse(text), policy)
+        assert 'Intro bullet' not in json.dumps(out)
+        assert 'Tuesday 2026-06-02' in out['Fake Voyage']
+
+    def test_chapter_intro_kept_when_chapter_starts_after_public_from(self, policy):
+        policy.public_from = datetime(2026, 6, 1)
+        out, _ = redact_diary(parse(DIARY), policy)
+        assert 'on board' in out['Fake Voyage']['__content__']
+
+    def test_chapter_without_published_days_left_out(self, policy):
+        # the chapter's own text belongs to a period nobody reviewed
+        text = DIARY + "\n# Fake Autumn\n\nIngrid left.\n\n## Monday 2026-09-07\n\nRain.\n"
+        out, report = redact_diary(parse(text), policy)
+        assert 'Fake Autumn' not in out
+        assert ' left.' not in json.dumps(out)
+        policy.reviewed_up_to = datetime(2026, 9, 7)
+        policy.public_from = datetime(2026, 9, 1)
+        out, _ = redact_diary(parse(text), policy)
+        assert [k for k in out if not k.startswith('__')] == ['Fake Autumn']
+        assert out['Fake Autumn']['__content__'] == 'Astrid left.'
+        assert 'Monday 2026-09-07' in out['Fake Autumn']
+
+    def test_public_from_after_review_date_rejected(self, policy):
+        policy.public_from = datetime(2026, 6, 2)
+        with pytest.raises(ValueError, match='public_from'):
+            redact_diary(parse(DIARY), policy)
+
     def test_review_date_required(self, policy):
         policy.reviewed_up_to = None
         with pytest.raises(ValueError, match='reviewed'):
@@ -247,8 +289,15 @@ class TestPolicyFile:
         }))
         policy = PublicPolicy.load(f)
         assert policy.reviewed_up_to == datetime(2026, 6, 1)
+        assert policy.public_from is None
         assert policy.people[1].replacement == 'a child'
         assert policy.allow_words == ['Harbourtown']
+
+
+    def test_load_public_from(self, tmp_path):
+        f = tmp_path / 'public.json'
+        f.write_text(json.dumps({'reviewed_up_to': '2026-11-01', 'public_from': '2026-10-01'}))
+        assert PublicPolicy.load(f).public_from == datetime(2026, 10, 1)
 
 
 class TestVerbatimContent:
