@@ -233,6 +233,12 @@
             margin-bottom: 4px;
         }
 
+        .left-out {
+            font-style: italic;
+            color: #999;
+            padding: 6px 0;
+        }
+
         .no-results {
             text-align: center;
             padding: 40px;
@@ -525,6 +531,16 @@
                     });
 
                     if (tripVisible) {
+                        const leftOut = trip.leftOut || [];
+                        let tripIntro = trip.intro
+                            ? `<div class="section-content main-content">${this.markdownToHtml(trip.intro)}</div>`
+                            : '';
+                        if (leftOut.includes('before')) {
+                            tripIntro += '<div class="left-out">Earlier entries are not published yet.</div>';
+                        }
+                        const tripOutro = leftOut.includes('after')
+                            ? '<div class="left-out">Later entries are not published yet.</div>'
+                            : '';
                         html += `
                             <div class="diary-entry level-1">
                                 <div class="collapsible-header ${this.currentViewMode === 'collapsed' ? 'collapsed' : ''}">
@@ -532,7 +548,7 @@
                                     <strong>${trip.title}</strong>
                                 </div>
                                 <div class="collapsible-content ${this.currentViewMode === 'collapsed' ? 'collapsed' : ''}">
-                                    ${tripHtml}
+                                    ${tripIntro}${tripHtml}${tripOutro}
                                 </div>
                             </div>
                         `;

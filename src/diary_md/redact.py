@@ -7,9 +7,10 @@ every exporter publishes the same thing:
 * whole days after ``reviewed_up_to`` are left out: moving that date is the
   human review step, and it also keeps the current position off the web.
   Days before ``public_from``, if set, are left out too, so that the diary
-  can be reviewed and published a period at a time.  A chapter's own text
-  is kept only if none of its days is before ``public_from``, and a chapter
-  left with no days is dropped;
+  can be reviewed and published a period at a time.  A chapter that keeps
+  some of its days keeps its own text too, and its ``__left_out__`` lists
+  the sides (``before``, ``after``) where days were left out, so a reader
+  can be told that more is to come; a chapter left with no days is dropped;
 * only whitelisted 3rd-level sections are kept.  Blacklisted ones are dropped
   silently, anything unlisted is dropped *and* reported, so that it gets
   classified.  Unlisted means private, which keeps it fail-closed;
@@ -305,10 +306,13 @@ def _redact_level(tree: dict, policy: PublicPolicy, report: RedactionReport) -> 
             days = _redact_days(value, policy, report, header)
             if not any(not k.startswith('__') for k in days):
                 continue
-            first = min(_day_date(k) for k, v in value.items() if not k.startswith('__') and isinstance(v, dict))
-            if policy.public_from and first < policy.public_from:
-                # the chapter's own text was written before its first day: keep only the days
-                days = {k: v for k, v in days.items() if not k.startswith('__') or k == '__file_name__'}
+            dates = [_day_date(k) for k, v in value.items() if not k.startswith('__') and isinstance(v, dict)]
+            left_out = [side for side, cut in (
+                ('before', policy.public_from and min(dates) < policy.public_from),
+                ('after', max(dates) > policy.reviewed_up_to),
+            ) if cut]
+            if left_out:
+                days['__left_out__'] = left_out
             out[header] = days
         else:
             _redact_days(value, policy, report, header)  # raises on the first undated child

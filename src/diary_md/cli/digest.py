@@ -199,7 +199,15 @@ def _web_trip(title: str, days: dict) -> dict | None:
         if not header.startswith('__') and isinstance(data, dict)
         for d in [_web_day(header, data)] if d
     ]
-    return {"title": title, "dates": dates} if dates else None
+    if not dates:
+        return None
+    trip = {"title": title, "dates": dates}
+    intro = days.get('__content__', '').strip()
+    if intro:
+        trip["intro"] = intro
+    if days.get('__left_out__'):
+        trip["leftOut"] = days['__left_out__']
+    return trip
 
 
 def web_json(md_dict: dict) -> dict:

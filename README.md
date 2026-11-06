@@ -152,9 +152,10 @@ published repository:
 * Days after `reviewed_up_to` are left out; moving it is the review step.
   Days before the optional `public_from` are left out too, so the diary can
   be reviewed and published a period at a time, moving `public_from` back as
-  each earlier period has been read through.  A chapter's own text is left
-  out when `public_from` cuts the chapter, and a chapter with no days left is
-  dropped.
+  each earlier period has been read through.  A chapter that keeps some of
+  its days keeps its intro too, and the viewer says "Earlier/Later entries
+  are not published yet" where days were left out; a chapter with no days
+  left is dropped.
   A day header without a valid `YYYY-MM-DD` date is an error, and so is an
   undated header that does not hold dated days (a chapter).
 * Only `public_sections` are kept (section name aliases count).  Sections in

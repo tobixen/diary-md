@@ -267,6 +267,26 @@ Nobody reads this.
         assert 'Ingrid' not in result.stdout
         assert 'Nor this' not in result.stdout
 
+    def test_export_public_chapter_intro_and_left_out(self, files):
+        diary, policy = files
+        diary.write_text(self.DIARY.replace('# Fake Voyage\n', '# Fake Voyage\n\nA trip with Ingrid.\n')
+                         + '\n## Tuesday 2026-07-01\n\nNot yet.\n')
+        result = CliRunner().invoke(
+            digest, ['--diary', str(diary), 'export-web-json', '--public', str(policy), '--allow-unknown'])
+        assert result.exit_code == 0, result.output
+        trip = json.loads(result.stdout)['trips'][0]
+        assert trip['intro'] == 'A trip with "Astrid".'
+        assert trip['leftOut'] == ['after']
+        assert 'Not yet' not in result.stdout
+
+    def test_export_without_intro_has_no_intro_key(self, files):
+        diary, policy = files
+        result = CliRunner().invoke(
+            digest, ['--diary', str(diary), 'export-web-json', '--public', str(policy), '--allow-unknown'])
+        trip = json.loads(result.stdout)['trips'][0]
+        assert 'intro' not in trip
+        assert 'leftOut' not in trip
+
     def test_bad_policy_is_a_clean_error(self, files, tmp_path):
         diary, _ = files
         bad = tmp_path / 'bad.json'

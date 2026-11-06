@@ -173,22 +173,25 @@ class TestRedactDiary:
         assert [k for k in out['Fake Voyage'] if not k.startswith('__')] == ['Tuesday 2026-06-02 - Fishbay']
         # sections of days left out are not reported
         assert not report.unclassified_sections
-        # the chapter's intro was written before public_from
-        assert '__content__' not in out['Fake Voyage']
-        assert 'on board' not in json.dumps(out)
+        # a cut chapter keeps its intro, and says which side was left out
+        assert 'on board' in out['Fake Voyage']['__content__']
+        assert out['Fake Voyage']['__left_out__'] == ['before']
 
-    def test_chapter_intro_list_left_out_when_cut(self, policy):
-        text = "# Fake Voyage\n\n* Intro bullet\n\n## Monday 2026-06-01\n\nx\n\n## Tuesday 2026-06-02\n\ny\n"
+    def test_left_out_after_review_date(self, policy):
+        out, _ = redact_diary(parse(DIARY), policy)
+        assert out['Fake Voyage']['__left_out__'] == ['after']
+
+    def test_left_out_both_sides(self, policy):
+        text = DIARY + "\n## Wednesday 2026-06-03\n\nLater.\n"
         policy.reviewed_up_to = datetime(2026, 6, 2)
         policy.public_from = datetime(2026, 6, 2)
         out, _ = redact_diary(parse(text), policy)
-        assert 'Intro bullet' not in json.dumps(out)
-        assert 'Tuesday 2026-06-02' in out['Fake Voyage']
+        assert out['Fake Voyage']['__left_out__'] == ['before', 'after']
 
-    def test_chapter_intro_kept_when_chapter_starts_after_public_from(self, policy):
-        policy.public_from = datetime(2026, 6, 1)
+    def test_nothing_left_out(self, policy):
+        policy.reviewed_up_to = datetime(2026, 6, 2)
         out, _ = redact_diary(parse(DIARY), policy)
-        assert 'on board' in out['Fake Voyage']['__content__']
+        assert '__left_out__' not in out['Fake Voyage']
 
     def test_chapter_without_published_days_left_out(self, policy):
         # the chapter's own text belongs to a period nobody reviewed

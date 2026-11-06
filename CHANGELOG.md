@@ -9,11 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Public export: `diary-digest export-web-json --public POLICY` leaves out
-  unreviewed days (after `reviewed_up_to` or before `public_from`), a
-  chapter's intro when `public_from` cuts the chapter, non-whitelisted
-  sections and `<!-- private -->` fenced paragraphs, and replaces names from
-  a people registry; `diary-digest check-public` reports unclassified
-  sections and unknown capitalised words
+  unreviewed days (after `reviewed_up_to` or before `public_from`),
+  non-whitelisted sections and `<!-- private -->` fenced paragraphs, and
+  replaces names from a people registry; the viewer says where a chapter
+  has entries not published yet.  `diary-digest check-public` reports
+  unclassified sections and unknown capitalised words
+- `export-web-json` exports a chapter's intro, and the viewer shows it
 
 ### Fixed
 - `diary-update` falls back to the target date's year file (`diary-YYYY.md`)

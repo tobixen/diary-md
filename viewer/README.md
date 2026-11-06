@@ -111,6 +111,8 @@ The viewer expects JSON in this format:
   "trips": [
     {
       "title": "Trip to Norway",
+      "intro": "Optional: the chapter's text before its first day.",
+      "leftOut": ["before", "after"],
       "dates": [
         {
           "date": "2026-01-21",
@@ -125,6 +127,9 @@ The viewer expects JSON in this format:
   ]
 }
 ```
+
+`leftOut` appears only in a public export (`--public`), and names the sides
+where days were left out as not yet reviewed; the viewer shows a note there.
 
 ## Offline Usage
 
