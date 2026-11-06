@@ -34,6 +34,8 @@ Static HTML viewer for browsing and searching your markdown diary.
 ### 📅 Date Filtering
 - Filter by date range (from/to)
 - Automatically parses dates from entry headers
+- Link to a day with `diary-viewer.html#2026-01-21`: it is opened, highlighted and
+  scrolled to
 
 ### 🏷️ Section Filtering
 - Filter by subsection type (Expenses, Notes, Weather, etc.)

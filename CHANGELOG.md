@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   unclassified sections, sections missing from `allowable_subsections`, and
   unknown capitalised words and names in the body text
 - `export-web-json` exports a chapter's intro, and the viewer shows it
+- The viewer opens and scrolls to the day a link points at
+  (`diary-viewer.html#2026-10-15`), so other pages can link to a day
 
 ### Fixed
 - The web viewer shows HTML in the diary as text instead of interpreting it,

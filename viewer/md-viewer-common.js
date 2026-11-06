@@ -216,6 +216,17 @@ class MarkdownViewerBase {
     }
 
     /**
+     * The day a URL fragment links to ("#2026-01-21"), if any
+     *
+     * @param {string} hash - location.hash
+     * @returns {string|null} The date, or null
+     */
+    dayFromHash(hash) {
+        const match = /^#(\d{4}-\d{2}-\d{2})$/.exec(hash || '');
+        return match ? match[1] : null;
+    }
+
+    /**
      * Simple markdown to HTML converter (basic support)
      * Handles: headers, lists, bold, italic, links
      *
@@ -347,6 +358,9 @@ class CollapsibleManager {
             console.warn('Container not found:', this.containerSelector);
             return;
         }
+        // Every render calls this; a second listener would undo each click
+        if (this.container === container) return;
+        this.container = container;
 
         container.addEventListener('click', (e) => {
             const header = e.target.closest('.collapsible-header');

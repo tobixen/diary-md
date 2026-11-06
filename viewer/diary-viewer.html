@@ -106,6 +106,10 @@
             background: #d5d8dc;
         }
 
+        .diary-entry.linked-day > .collapsible-header {
+            background: #fff3c4;
+        }
+
         .filter-btn.active {
             background: #3498db;
             color: white;
@@ -349,7 +353,8 @@
                     this.setupEventListeners();
                     this.populateSectionFilters();
                     this.render();
-                    this.collapsibleManager.init();
+                    this.showDay();
+                    window.addEventListener('hashchange', () => this.showDay());
 
                     console.log('✅ Diary viewer initialized');
                 } catch (error) {
@@ -447,6 +452,8 @@
                 let html = '';
                 let totalEntries = 0;
                 let visibleEntries = 0;
+                // A date heading days in two chapters is linked to its first one
+                const dayIds = new Set();
 
                 this.trips.forEach(trip => {
                     let tripHtml = '';
@@ -514,8 +521,10 @@
                         });
 
                         if (dateVisible) {
+                            const id = date && !dayIds.has(date) ? ` id="${date}"` : '';
+                            if (date) dayIds.add(date);
                             tripHtml += `
-                                <div class="diary-entry level-2">
+                                <div class="diary-entry level-2"${id}>
                                     <div class="collapsible-header ${this.currentViewMode !== 'full' ? 'collapsed' : ''}">
                                         <span class="collapse-icon">▼</span>
                                         <strong>${this.escapeHtml(dateEntry.dateString)}</strong>
@@ -563,6 +572,28 @@
 
                 // Reinitialize collapsible after render
                 this.collapsibleManager.init();
+                this.markLinkedDay();
+            }
+
+            // Highlight the day the URL links to (#YYYY-MM-DD); render() rebuilds the days,
+            // so this is re-applied after each render, where :target would not be
+            markLinkedDay() {
+                document.querySelectorAll('.linked-day').forEach(e => e.classList.remove('linked-day'));
+                const day = this.dayFromHash(location.hash);
+                const entry = day && document.getElementById(day);
+                if (entry) entry.classList.add('linked-day');
+                return entry;
+            }
+
+            // Open and scroll to the linked day, e.g. from the map
+            showDay() {
+                const entry = this.markLinkedDay();
+                if (!entry) return;
+                for (let e = entry; e; e = e.parentElement && e.parentElement.closest('.diary-entry')) {
+                    const header = e.querySelector(':scope > .collapsible-header');
+                    if (header) this.collapsibleManager.expand(header);
+                }
+                entry.scrollIntoView();
             }
 
             toggleExpenseSummary() {
