@@ -15,10 +15,10 @@ repos:
       - id: check-added-large-files
 
   - repo: https://github.com/lycheeverse/lychee
-    rev: lycheeverse/lychee@v0.15.1
+    rev: v0.15.1
     hooks:
       - id: lychee
-        args: ["--no-progress", "."]
+        args: ["--no-progress", "--exclude-path", "LICENSE", "."]
 
   - repo: local
     hooks:
