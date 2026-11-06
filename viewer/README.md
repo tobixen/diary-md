@@ -20,7 +20,7 @@ Static HTML viewer for browsing and searching your markdown diary.
 ## Files
 
 - `diary-viewer.html` - Main viewer (standalone, no build required)
-- `md-viewer-common.js` - Shared library (synced from inventory-md)
+- `md-viewer-common.js` - Common viewer library (markdown, search, collapsing)
 - `aliases.json` - Place name aliases for multi-language search
 - `diary.json` - Your diary data (generated from markdown)
 
@@ -160,27 +160,20 @@ Requires ES6+ support (all modern browsers).
 
 ## Development
 
-### Shared Code
+### Common Code
 
-`md-viewer-common.js` is shared with [inventory-md](https://github.com/tobixen/inventory-md).
-
-**Source of truth:** inventory-md
-**Sync:** Automatic via git hook
-
-See `../docs/SHARED_CODE.md` for details.
+`md-viewer-common.js` started out shared with
+[inventory-md](https://github.com/tobixen/inventory-md), but is now
+maintained here only; inventory-md's `search.html` carries its own
+inline copies of some of its functions.
 
 ### Modifying the Viewer
 
 To modify the viewer:
 
-1. Edit `diary-viewer.html`
-2. Test locally
+1. Edit `diary-viewer.html` or `md-viewer-common.js`
+2. Test locally (`node tests/js/viewer_escape.test.js` covers the escaping)
 3. Commit changes
-
-To modify shared code:
-
-1. Make changes in inventory-md
-2. Commit there (auto-syncs to diary-md)
 
 ## Troubleshooting
 

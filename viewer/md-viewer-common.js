@@ -2,8 +2,7 @@
  * md-viewer-common.js
  * Shared JavaScript utilities for markdown-based viewers
  *
- * Used by: diary-md, inventory-md
- * Source: https://github.com/tobixen/inventory-md
+ * Used by: diary-md (inventory-md's search.html has its own inline copies)
  * License: MIT
  *
  * @version 1.0.0
@@ -103,13 +102,35 @@ class MarkdownViewerBase {
         // Get all search terms including aliases
         const searchTerms = this.expandSearchWithAliases(searchTerm);
 
-        // Escape special regex characters and create pattern for all terms
+        // The text is HTML, so the terms are escaped like it, then for regex
         const escapedTerms = searchTerms.map(t =>
-            t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+            this.escapeHtml(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
         );
-        const regex = new RegExp(`(${escapedTerms.join('|')})`, 'gi');
+        // An entity no term starts at is skipped whole, so "amp" never
+        // matches inside "&amp;"
+        const regex = new RegExp(`(${escapedTerms.join('|')})|&[#\\w]+;`, 'gi');
 
-        return text.replace(regex, '<span class="highlight">$1</span>');
+        // Only text between tags is highlighted, never markup
+        return text.split(/(<[^>]*>)/).map((part, i) =>
+            i % 2 ? part : part.replace(regex, (match, term) =>
+                term ? `<span class="highlight">${term}</span>` : match
+            )
+        ).join('');
+    }
+
+    /**
+     * Escape text for use in HTML content and attribute values
+     *
+     * @param {string} text - Plain text
+     * @returns {string} Escaped text
+     */
+    escapeHtml(text) {
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     /**
@@ -203,7 +224,8 @@ class MarkdownViewerBase {
      */
     markdownToHtml(markdown) {
         let html = '';
-        const lines = markdown.split('\n');
+        // The source is text: any HTML in it is shown, never interpreted
+        const lines = this.escapeHtml(markdown).split('\n');
         let inList = false;
         let currentParagraph = '';
 
@@ -284,12 +306,21 @@ class MarkdownViewerBase {
             html += '</ul>\n';
         }
 
+        // Links only to http(s), mailto and relative URLs (no colon before
+        // the first / ? #); anything else stays text.  The URLs are held
+        // back until the formatting below is done, so it cannot reach them.
+        const urls = [];
+        html = html.replace(/\[(.+?)\]\((.+?)\)/g, (match, label, url) => {
+            if (!/^(https?:\/\/|mailto:|[^:/?#]*([/?#]|$))/i.test(url)) return label;
+            urls.push(url);
+            return `<a href="\u0000${urls.length - 1}\u0000">${label}</a>`;
+        });
+
         // Basic inline formatting
         html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-        html = html.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>');
 
-        return html;
+        return html.replace(/\u0000(\d+)\u0000/g, (match, i) => urls[i]);
     }
 }
 

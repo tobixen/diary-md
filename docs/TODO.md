@@ -2,7 +2,7 @@
   * ✅ Searchable with multi-language aliases (aliases.json)
   * ✅ Find unique subsections, filter by section type, expense summaries
   * ✅ Expand/collapse sections (3 levels: Trip → Date → Section)
-  * ✅ Uses md-viewer-common.js shared with inventory-md
+  * ✅ Uses md-viewer-common.js (inventory-md's search.html duplicates parts of it inline)
   * ✅ Static HTML - no server required
   * See: viewer/README.md for usage
 
@@ -16,10 +16,5 @@
 
 ## Known bugs
 
-* The web viewer inserts diary text as raw HTML: `markdownToHtml` passes HTML
-  and `javascript:` links through, section names and titles are interpolated
-  unescaped, and search highlighting runs regexes over the finished markup
-  (searching for "class" breaks it).  Escape before the markdown transforms,
-  allow only http(s)/relative links, highlight text nodes only.  Since a
-  section's content is its source text, whole HTML blocks and fenced code
-  reach it too, also in `--public` output (`#` lines in code render as headings).
+* The web viewer has no fenced-code support: `#` lines inside a code block
+  render as headings.  (HTML in the diary is shown as text since 2026-11-06.)

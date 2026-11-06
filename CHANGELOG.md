@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `export-web-json` exports a chapter's intro, and the viewer shows it
 
 ### Fixed
+- The web viewer shows HTML in the diary as text instead of interpreting it,
+  links only to http(s), mailto and relative URLs, and search highlighting no longer
+  breaks the page when the search term matches markup ("class")
 - `diary-update` falls back to the target date's year file (`diary-YYYY.md`)
   rather than the current year's when no diary file covers the date
 - `diary-digest expenses` accepts `-` and `+` bullets as well as `*`

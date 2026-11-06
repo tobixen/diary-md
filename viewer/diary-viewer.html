@@ -503,7 +503,7 @@
                                 <div class="diary-entry level-3">
                                     <div class="collapsible-header ${this.currentViewMode === 'collapsed' ? 'collapsed' : ''}">
                                         <span class="collapse-icon">▼</span>
-                                        <strong>${section}</strong>
+                                        <strong>${this.escapeHtml(section)}</strong>
                                     </div>
                                     <div class="collapsible-content section-content ${this.currentViewMode === 'collapsed' ? 'collapsed' : ''}">
                                         ${renderedContent}
@@ -518,7 +518,7 @@
                                 <div class="diary-entry level-2">
                                     <div class="collapsible-header ${this.currentViewMode !== 'full' ? 'collapsed' : ''}">
                                         <span class="collapse-icon">▼</span>
-                                        <strong>${dateEntry.dateString}</strong>
+                                        <strong>${this.escapeHtml(dateEntry.dateString)}</strong>
                                     </div>
                                     <div class="collapsible-content ${this.currentViewMode !== 'full' ? 'collapsed' : ''}">
                                         ${dateHtml}
@@ -545,7 +545,7 @@
                             <div class="diary-entry level-1">
                                 <div class="collapsible-header ${this.currentViewMode === 'collapsed' ? 'collapsed' : ''}">
                                     <span class="collapse-icon">▼</span>
-                                    <strong>${trip.title}</strong>
+                                    <strong>${this.escapeHtml(trip.title)}</strong>
                                 </div>
                                 <div class="collapsible-content ${this.currentViewMode === 'collapsed' ? 'collapsed' : ''}">
                                     ${tripIntro}${tripHtml}${tripOutro}
@@ -621,7 +621,7 @@
             showError(message) {
                 document.getElementById('diaryContent').innerHTML = `
                     <div class="error">
-                        <strong>Error:</strong> ${message}
+                        <strong>Error:</strong> ${this.escapeHtml(message)}
                     </div>
                 `;
             }
