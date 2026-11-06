@@ -50,7 +50,7 @@ def load_config(config_file: Path | None = None) -> dict:
         return {}
 
     try:
-        with open(config_file, encoding='utf-8') as f:
+        with open(config_file, encoding="utf-8") as f:
             return json.load(f)
     except (OSError, json.JSONDecodeError):
         return {}
@@ -62,7 +62,7 @@ def get_config_for_diary(cfg: dict, diary_path: str) -> dict:
     Matches diary path against patterns in diary_configs.
     Falls back to top-level config if no pattern matches.
     """
-    diary_configs = cfg.get('diary_configs', {})
+    diary_configs = cfg.get("diary_configs", {})
 
     for pattern, diary_cfg in diary_configs.items():
         if fnmatch.fnmatch(diary_path, pattern):
@@ -90,23 +90,28 @@ def get_diary_list(ctx) -> list[dict]:
     (find-all-subsections, export-web-json) should not fail on a broken date
     header elsewhere in the diary.
     """
-    if 'diary_list' not in ctx.obj:
-        ctx.obj['diary_list'] = parse_diary_to_list(
-            ctx.obj['md_dict'], start=ctx.obj['start'], end=ctx.obj['end']
-        )
-    return ctx.obj['diary_list']
+    if "diary_list" not in ctx.obj:
+        ctx.obj["diary_list"] = parse_diary_to_list(ctx.obj["md_dict"], start=ctx.obj["start"], end=ctx.obj["end"])
+    return ctx.obj["diary_list"]
 
 
 @click.group(cls=DiaryGroup)
-@click.option('--start', help='Only show dates at or after this date', type=click.DateTime(formats=[DATE_FORMAT]))
-@click.option('--begin', 'start', help='alias for start', type=click.DateTime(formats=[DATE_FORMAT]))
-@click.option('--since', 'start', help='alias for start', type=click.DateTime(formats=[DATE_FORMAT]))
-@click.option('--from', 'start', help='alias for start', type=click.DateTime(formats=[DATE_FORMAT]))
-@click.option('--end', help='Only show dates up until and including this date', type=click.DateTime(formats=[DATE_FORMAT]))
-@click.option('--to', 'end', help='alias for end', type=click.DateTime(formats=[DATE_FORMAT]))
-@click.option('--until', 'end', help='alias for end', type=click.DateTime(formats=[DATE_FORMAT]))
-@click.option('--diary', type=click.File('r'), default=(sys.stdin,), multiple=True,
-              help='Diary file to read; repeat for several files. Defaults to stdin.')
+@click.option("--start", help="Only show dates at or after this date", type=click.DateTime(formats=[DATE_FORMAT]))
+@click.option("--begin", "start", help="alias for start", type=click.DateTime(formats=[DATE_FORMAT]))
+@click.option("--since", "start", help="alias for start", type=click.DateTime(formats=[DATE_FORMAT]))
+@click.option("--from", "start", help="alias for start", type=click.DateTime(formats=[DATE_FORMAT]))
+@click.option(
+    "--end", help="Only show dates up until and including this date", type=click.DateTime(formats=[DATE_FORMAT])
+)
+@click.option("--to", "end", help="alias for end", type=click.DateTime(formats=[DATE_FORMAT]))
+@click.option("--until", "end", help="alias for end", type=click.DateTime(formats=[DATE_FORMAT]))
+@click.option(
+    "--diary",
+    type=click.File("r"),
+    default=(sys.stdin,),
+    multiple=True,
+    help="Diary file to read; repeat for several files. Defaults to stdin.",
+)
 @click.pass_context
 def digest(ctx, diary, start, end):
     """Analyze and extract information from markdown diary files.
@@ -126,35 +131,35 @@ def digest(ctx, diary, start, end):
     whole concatenation.
     """
     ctx.ensure_object(dict)
-    ctx.obj['md_dict'] = {}
-    ctx.obj['diary_paths'] = []
-    ctx.obj['start'] = start
-    ctx.obj['end'] = end
-    ctx.obj['diary_texts'] = []
+    ctx.obj["md_dict"] = {}
+    ctx.obj["diary_paths"] = []
+    ctx.obj["start"] = start
+    ctx.obj["end"] = end
+    ctx.obj["diary_texts"] = []
     for d in diary:
         # Kept raw for the public export, which strips private fences before parsing
-        name = getattr(d, 'name', '<stream>')
+        name = getattr(d, "name", "<stream>")
         text = d.read()
-        ctx.obj['diary_texts'].append((name, text))
+        ctx.obj["diary_texts"].append((name, text))
         stream = io.StringIO(text)
         stream.name = name
-        ctx.obj['md_dict'].update(markdown_to_dict(stream))
+        ctx.obj["md_dict"].update(markdown_to_dict(stream))
         # Track diary paths for config lookup
-        if hasattr(d, 'name') and d.name != '<stdin>':
-            ctx.obj['diary_paths'].append(d.name)
+        if hasattr(d, "name") and d.name != "<stdin>":
+            ctx.obj["diary_paths"].append(d.name)
 
 
 @digest.command()
 @click.pass_context
-@click.option('--section', multiple=True, help='Section(s) to extract')
+@click.option("--section", multiple=True, help="Section(s) to extract")
 def select_subsection(ctx, section):
     """Extract specific subsections from diary entries."""
     header = ""
     for x in get_diary_list(ctx):
-        if x['trip'] != header:
+        if x["trip"] != header:
             click.echo(f"# {x['trip']}")
             click.echo()
-            header = x['trip']
+            header = x["trip"]
         day_print = False
         for s in section:
             if s in x:
@@ -163,7 +168,7 @@ def select_subsection(ctx, section):
                     click.echo()
                     day_print = True
                 click.echo(f"### {s}")
-                click.echo(x[s]['__content__'])
+                click.echo(x[s]["__content__"])
 
 
 @digest.command()
@@ -175,15 +180,15 @@ def export_json(ctx):
 
 def _web_day(day_header: str, day_data: dict) -> dict | None:
     """One day in the web viewer format, or None if it has no content."""
-    date_match = re.search(r'20\d\d-\d\d-\d\d', day_header)
+    date_match = re.search(r"20\d\d-\d\d-\d\d", day_header)
     sections = {}
     # Main day content (prose before any ### subsection)
-    main_content = day_data.get('__content__', '').strip()
+    main_content = day_data.get("__content__", "").strip()
     if main_content:
-        sections[''] = main_content
+        sections[""] = main_content
     for section_name in day_data:
-        if not section_name.startswith('__'):
-            sections[section_name] = day_data[section_name].get('__content__', '')
+        if not section_name.startswith("__"):
+            sections[section_name] = day_data[section_name].get("__content__", "")
     if not sections:
         return None
     return {
@@ -195,34 +200,38 @@ def _web_day(day_header: str, day_data: dict) -> dict | None:
 
 def _web_trip(title: str, days: dict) -> dict | None:
     dates = [
-        d for header, data in days.items()
-        if not header.startswith('__') and isinstance(data, dict)
-        for d in [_web_day(header, data)] if d
+        d
+        for header, data in days.items()
+        if not header.startswith("__") and isinstance(data, dict)
+        for d in [_web_day(header, data)]
+        if d
     ]
     if not dates:
         return None
     trip = {"title": title, "dates": dates}
-    intro = days.get('__content__', '').strip()
+    intro = days.get("__content__", "").strip()
     if intro:
         trip["intro"] = intro
-    if days.get('__left_out__'):
-        trip["leftOut"] = days['__left_out__']
+    if days.get("__left_out__"):
+        trip["leftOut"] = days["__left_out__"]
     return trip
 
 
 def web_json(md_dict: dict) -> dict:
     """The diary in the hierarchical trip/date/section format of diary-viewer.html."""
+
     def looks_like_date(key):
-        return bool(re.match(r'^[A-Za-zæøåÆØÅ]+ 20\d\d-\d\d-\d\d', key))
+        return bool(re.match(r"^[A-Za-zæøåÆØÅ]+ 20\d\d-\d\d-\d\d", key))
 
     # Top-level keys may be date headers directly, with no trip wrapper
-    non_meta_keys = [k for k in md_dict if not k.startswith('__')]
+    non_meta_keys = [k for k in md_dict if not k.startswith("__")]
     if non_meta_keys and all(looks_like_date(k) for k in non_meta_keys):
         trips = [_web_trip("Diary", md_dict)]
     else:
         trips = [
-            _web_trip(header, data) for header, data in md_dict.items()
-            if not header.startswith('__') and isinstance(data, dict)
+            _web_trip(header, data)
+            for header, data in md_dict.items()
+            if not header.startswith("__") and isinstance(data, dict)
         ]
     return {"trips": [t for t in trips if t]}
 
@@ -234,33 +243,36 @@ def public_diary(ctx, policy_file: Path, places: Path | None) -> tuple[dict, Red
     except ValueError as e:
         raise click.ClickException(str(e)) from e
     md_dict: dict = {}
-    for name, text in ctx.obj['diary_texts']:
+    for name, text in ctx.obj["diary_texts"]:
         stream = io.StringIO(public_text(text))
         stream.name = name
         md_dict.update(markdown_to_dict(stream))
     known = set()
     if places:
-        with open(places, encoding='utf-8') as f:
+        with open(places, encoding="utf-8") as f:
             for place, aliases in json.load(f).items():
                 known |= {place, *aliases}
     try:
         return redact_diary(md_dict, policy, known_words=known)
     except ValueError as e:
-        raise click.ClickException(f'{policy_file}: {e}') from e
+        raise click.ClickException(f"{policy_file}: {e}") from e
 
 
-POLICY_HELP = 'Public policy JSON: people registry, public/private sections, allowed words, reviewed_up_to, public_from'
-PLACES_HELP = 'Place aliases JSON (as used by the viewer); its names count as known words'
+POLICY_HELP = "Public policy JSON: people registry, public/private sections, allowed words, reviewed_up_to, public_from"
+PLACES_HELP = "Place aliases JSON (as used by the viewer); its names count as known words"
 
 
 @digest.command()
 @click.pass_context
-@click.option('--pretty', is_flag=True, help='Pretty-print JSON output')
-@click.option('--public', 'policy', type=click.Path(exists=True, dir_okay=False, path_type=Path),
-              help=f'Export the public version. {POLICY_HELP}')
-@click.option('--places', type=click.Path(exists=True, dir_okay=False, path_type=Path), help=PLACES_HELP)
-@click.option('--allow-unknown', is_flag=True,
-              help='With --public: export even if unknown capitalised words remain')
+@click.option("--pretty", is_flag=True, help="Pretty-print JSON output")
+@click.option(
+    "--public",
+    "policy",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    help=f"Export the public version. {POLICY_HELP}",
+)
+@click.option("--places", type=click.Path(exists=True, dir_okay=False, path_type=Path), help=PLACES_HELP)
+@click.option("--allow-unknown", is_flag=True, help="With --public: export even if unknown capitalised words remain")
 def export_web_json(ctx, pretty, policy, places, allow_unknown):
     """Export diary as JSON for web viewer.
 
@@ -272,15 +284,15 @@ def export_web_json(ctx, pretty, policy, places, allow_unknown):
     unknown capitalised words make the export fail unless --allow-unknown.
     """
     if not policy and (places or allow_unknown):
-        raise click.UsageError('--places and --allow-unknown only apply with --public')
+        raise click.UsageError("--places and --allow-unknown only apply with --public")
     if policy:
         md_dict, report = public_diary(ctx, policy, places)
         if report.format():
             click.echo(report.format(), err=True)
         if report.unknown_tokens and not allow_unknown:
-            raise click.ClickException('unknown capitalised words; add them to the policy or pass --allow-unknown')
+            raise click.ClickException("unknown capitalised words; add them to the policy or pass --allow-unknown")
     else:
-        md_dict = ctx.obj['md_dict']
+        md_dict = ctx.obj["md_dict"]
     output = web_json(md_dict)
     if pretty:
         click.echo(json.dumps(output, indent=2, ensure_ascii=False))
@@ -291,19 +303,21 @@ def export_web_json(ctx, pretty, policy, places, allow_unknown):
 def allowable_subsections(ctx, config: Path | None) -> list[str]:
     """The config's ``allowable_subsections`` for the (first) diary, or the top-level list."""
     cfg = load_config(config)
-    diary_paths = ctx.obj.get('diary_paths', [])
+    diary_paths = ctx.obj.get("diary_paths", [])
     if diary_paths:
         cfg = get_config_for_diary(cfg, diary_paths[0])
-    return cfg.get('allowable_subsections', [])
+    return cfg.get("allowable_subsections", [])
 
 
 @digest.command()
 @click.pass_context
-@click.option('--policy', required=True, type=click.Path(exists=True, dir_okay=False, path_type=Path),
-              help=POLICY_HELP)
-@click.option('--places', type=click.Path(exists=True, dir_okay=False, path_type=Path), help=PLACES_HELP)
-@click.option('--config', type=click.Path(exists=True, path_type=Path),
-              help=f'Config file with allowable_subsections (default: {DEFAULT_CONFIG_FILE})')
+@click.option("--policy", required=True, type=click.Path(exists=True, dir_okay=False, path_type=Path), help=POLICY_HELP)
+@click.option("--places", type=click.Path(exists=True, dir_okay=False, path_type=Path), help=PLACES_HELP)
+@click.option(
+    "--config",
+    type=click.Path(exists=True, path_type=Path),
+    help=f"Config file with allowable_subsections (default: {DEFAULT_CONFIG_FILE})",
+)
 def check_public(ctx, policy, places, config):
     """Report what the public export would leave for a human to classify.
 
@@ -321,22 +335,25 @@ def check_public(ctx, policy, places, config):
     stray = []
     if allowable:
         loaded = PublicPolicy.load(policy)
-        listed = {SECTION_TO_CANONICAL.get(s, s)
-                  for s in [*allowable, *loaded.public_sections, *loaded.private_sections]}
+        listed = {
+            SECTION_TO_CANONICAL.get(s, s) for s in [*allowable, *loaded.public_sections, *loaded.private_sections]
+        }
         stray = [(s, n) for s, n in report.sections.most_common() if SECTION_TO_CANONICAL.get(s, s) not in listed]
     if not allowable:
-        click.echo('Note: no allowable_subsections in the config; section names were not checked')
+        click.echo("Note: no allowable_subsections in the config; section names were not checked")
     if stray:
-        click.echo('Sections not in allowable_subsections (a typo, or the list needs updating):')
+        click.echo("Sections not in allowable_subsections (a typo, or the list needs updating):")
         for name, n in stray:
-            click.echo(f'  {name} ({n})')
+            click.echo(f"  {name} ({n})")
     if report.unknown_tokens or stray:
         ctx.exit(1)
 
+
 @digest.command()
 @click.pass_context
-@click.option('--config', type=click.Path(exists=True, path_type=Path),
-              help=f'Config file (default: {DEFAULT_CONFIG_FILE})')
+@click.option(
+    "--config", type=click.Path(exists=True, path_type=Path), help=f"Config file (default: {DEFAULT_CONFIG_FILE})"
+)
 def find_all_subsections(ctx, config):
     """Find all subsection titles used in the diary.
 
@@ -345,11 +362,11 @@ def find_all_subsections(ctx, config):
 
     Supports diary-specific configs with glob patterns in diary_configs section.
     """
-    md_dict = ctx.obj['md_dict']
+    md_dict = ctx.obj["md_dict"]
     allowable_from_config = allowable_subsections(ctx, config)
 
     # Always allow internal keys
-    allowable_subsection_titles = {'__content__', '__file_position__', '__file_name__'}
+    allowable_subsection_titles = {"__content__", "__file_position__", "__file_name__"}
     allowable_subsection_titles.update(allowable_from_config)
 
     subsection_titles = set()
@@ -357,22 +374,23 @@ def find_all_subsections(ctx, config):
     def _looks_like_date(key: str) -> bool:
         """Check if key looks like a date header."""
         import re
-        return bool(re.match(r'^[A-Za-zæøåÆØÅ]+ 20\d\d-\d\d-\d\d', key))
+
+        return bool(re.match(r"^[A-Za-zæøåÆØÅ]+ 20\d\d-\d\d-\d\d", key))
 
     # Check if top-level keys are date headers (no trip wrapper)
-    non_meta_keys = [k for k in md_dict if not k.startswith('__')]
+    non_meta_keys = [k for k in md_dict if not k.startswith("__")]
     direct_dates = non_meta_keys and all(_looks_like_date(k) for k in non_meta_keys)
 
     if direct_dates:
         # Top-level is date headers directly
         for day in md_dict:
-            if not isinstance(day, str) or day.startswith('__'):
+            if not isinstance(day, str) or day.startswith("__"):
                 continue
             day_data = md_dict[day]
             if not isinstance(day_data, dict):
                 continue
             for subtitle in day_data:
-                if not isinstance(subtitle, str) or subtitle.startswith('__'):
+                if not isinstance(subtitle, str) or subtitle.startswith("__"):
                     continue
                 subsection_titles.add(subtitle)
                 if allowable_from_config and subtitle not in allowable_subsection_titles:
@@ -383,13 +401,13 @@ def find_all_subsections(ctx, config):
             if not isinstance(md_dict[headline], dict):
                 continue
             for day in md_dict[headline]:
-                if not isinstance(day, str) or day.startswith('__'):
+                if not isinstance(day, str) or day.startswith("__"):
                     continue
                 day_data = md_dict[headline][day]
                 if not isinstance(day_data, dict):
                     continue
                 for subtitle in day_data:
-                    if not isinstance(subtitle, str) or subtitle.startswith('__'):
+                    if not isinstance(subtitle, str) or subtitle.startswith("__"):
                         continue
                     subsection_titles.add(subtitle)
                     if allowable_from_config and subtitle not in allowable_subsection_titles:
@@ -412,22 +430,22 @@ def expenses(ctx):
     accounted = []
 
     for entry in get_diary_list(ctx):
-        expense_section = find_section(entry, 'Expenses')
+        expense_section = find_section(entry, "Expenses")
         if expense_section is None:
             continue
 
         unaccounted = ""
-        if '__content__' not in expense_section:
+        if "__content__" not in expense_section:
             raise DiaryParseError(
                 "Expenses section has no content",
-                file_name=entry.get('__file_name__'),
-                file_position=entry.get('__file_position__'),
+                file_name=entry.get("__file_name__"),
+                file_position=entry.get("__file_position__"),
                 section=f"{entry['dow']} {entry['date']} {entry.get('itenary', '')}",
-                date=entry['date']
+                date=entry["date"],
             )
 
-        expense_date = entry['date']  # YYYY-MM-DD format
-        expenses_text = expense_section['__content__'].strip().split('\n')
+        expense_date = entry["date"]  # YYYY-MM-DD format
+        expenses_text = expense_section["__content__"].strip().split("\n")
 
         for expense in expenses_text:
             if not unaccounted:
@@ -444,7 +462,7 @@ def expenses(ctx):
             unaccounted_content.append(f"## {entry['dow']} {entry['date']} {entry['itenary']}\n")
             unaccounted_content.append(unaccounted)
 
-    base_currency = 'EUR'
+    base_currency = "EUR"
 
     my_expenses = 0
     total_expenses = 0
@@ -466,9 +484,9 @@ def expenses(ctx):
             currency = base_currency
 
         total_expenses += amount
-        category = details.split(' - ')[0]
-        if ' (' in category:
-            category = category.split(' (')[0]
+        category = details.split(" - ")[0]
+        if " (" in category:
+            category = category.split(" (")[0]
 
         paidbyf = re.search(r"- paid by ([^ ]*)", details)
         if paidbyf:
@@ -518,5 +536,5 @@ def main():
     digest()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

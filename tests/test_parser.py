@@ -31,9 +31,9 @@ Content under section 1.1.
 Content under section 1.2.
 """
         result = markdown_to_dict(StringIO(content))
-        assert 'Header 1' in result
-        assert 'Section 1.1' in result['Header 1']
-        assert 'Section 1.2' in result['Header 1']
+        assert "Header 1" in result
+        assert "Section 1.1" in result["Header 1"]
+        assert "Section 1.2" in result["Header 1"]
 
     def test_nested_content(self):
         """Parse nested markdown content."""
@@ -51,10 +51,10 @@ Content under section 1.2.
 Fixed the thing.
 """
         result = markdown_to_dict(StringIO(content))
-        assert 'Trip' in result
-        assert 'Monday 2026-01-20' in result['Trip']
-        assert 'Expenses' in result['Trip']['Monday 2026-01-20']
-        assert '* EUR 15.00' in result['Trip']['Monday 2026-01-20']['Expenses']['__content__']
+        assert "Trip" in result
+        assert "Monday 2026-01-20" in result["Trip"]
+        assert "Expenses" in result["Trip"]["Monday 2026-01-20"]
+        assert "* EUR 15.00" in result["Trip"]["Monday 2026-01-20"]["Expenses"]["__content__"]
 
     def test_content_key(self):
         """Content is stored under __content__ key."""
@@ -65,9 +65,8 @@ Some content here.
 More content.
 """
         result = markdown_to_dict(StringIO(content))
-        assert '__content__' in result['Header']
-        assert 'Some content here.' in result['Header']['__content__']
-
+        assert "__content__" in result["Header"]
+        assert "Some content here." in result["Header"]["__content__"]
 
 
 class TestFindOrCreateDateSection:
@@ -212,17 +211,17 @@ class TestParseDiaryExpenses:
         assert len(expenses) > 0
 
         # Check a specific expense
-        lidl_expense = [e for e in expenses if 'Lidl' in e['description']]
+        lidl_expense = [e for e in expenses if "Lidl" in e["description"]]
         assert len(lidl_expense) == 1
-        assert lidl_expense[0]['currency'] == 'EUR'
-        assert lidl_expense[0]['amount'] == 15.72
+        assert lidl_expense[0]["currency"] == "EUR"
+        assert lidl_expense[0]["amount"] == 15.72
 
     def test_skip_reconciled(self, sample_diary_file):
         """Skip already reconciled expenses."""
         expenses = parse_diary_expenses(sample_diary_file)
 
         # The Billa expense is already reconciled
-        billa_expense = [e for e in expenses if 'Billa' in e['description']]
+        billa_expense = [e for e in expenses if "Billa" in e["description"]]
         assert len(billa_expense) == 0
 
     def test_nonexistent_file(self, tmp_path):
@@ -245,11 +244,11 @@ Paragraph text.
 * Item 2
 """
         result = markdown_to_dict(StringIO(content))
-        assert '__paragraphs__' in result['Header']
-        assert result['Header']['__paragraphs__'] == ['Paragraph text.']
-        assert '__list_items__' in result['Header']
-        assert len(result['Header']['__list_items__']) == 2
-        assert result['Header']['__list_items__'][0]['text'] == 'Item 1'
+        assert "__paragraphs__" in result["Header"]
+        assert result["Header"]["__paragraphs__"] == ["Paragraph text."]
+        assert "__list_items__" in result["Header"]
+        assert len(result["Header"]["__list_items__"]) == 2
+        assert result["Header"]["__list_items__"][0]["text"] == "Item 1"
 
 
 class TestContentIsComplete:
@@ -257,16 +256,16 @@ class TestContentIsComplete:
 
     def test_table_in_content(self):
         content = "# Trip\n\n## Monday 2026-01-20\n\nLogs:\n\n| Time | COG |\n|---|---|\n| 1300 | 070 |\n"
-        day = markdown_to_dict(StringIO(content))['Trip']['Monday 2026-01-20']
-        assert '| 1300 | 070 |' in day['__content__']
+        day = markdown_to_dict(StringIO(content))["Trip"]["Monday 2026-01-20"]
+        assert "| 1300 | 070 |" in day["__content__"]
 
     def test_dash_bullet_expense_counted(self, tmp_path):
         from click.testing import CliRunner
 
         from diary_md.cli.digest import digest
 
-        diary = tmp_path / 'diary-2026.md'
+        diary = tmp_path / "diary-2026.md"
         diary.write_text("# Trip\n\n## Tuesday 2026-01-20\n\n### Expenses\n\n- EUR 15.00 - groceries - Lidl\n")
-        result = CliRunner().invoke(digest, ['--diary', str(diary), 'expenses'])
+        result = CliRunner().invoke(digest, ["--diary", str(diary), "expenses"])
         assert result.exit_code == 0, result.output
-        assert 'Total expenses: EUR 15.00' in result.output
+        assert "Total expenses: EUR 15.00" in result.output

@@ -18,10 +18,10 @@ def parse_diary_filename(filename: str) -> tuple[datetime | None, datetime | Non
         Returns (None, None) if filename doesn't match expected pattern.
     """
     # Match diary-YYYY.md or diary-YYYYMM.md patterns
-    match = re.match(r'^diary-?(\d{4})(\d{2})?\.md$', filename, re.IGNORECASE)
+    match = re.match(r"^diary-?(\d{4})(\d{2})?\.md$", filename, re.IGNORECASE)
     if not match:
         # Also try with prefix like diary-oslo-202512.md
-        match = re.match(r'^diary-[a-z]+-(\d{4})(\d{2})?\.md$', filename, re.IGNORECASE)
+        match = re.match(r"^diary-[a-z]+-(\d{4})(\d{2})?\.md$", filename, re.IGNORECASE)
 
     if not match:
         return (None, None)
@@ -62,10 +62,7 @@ def find_diary_files(
         files_with_dates.append((f, start_date, end_date))
 
     # Sort by start date, newest first (files without dates go last)
-    files_with_dates.sort(
-        key=lambda x: x[1] if x[1] else datetime.min,
-        reverse=True
-    )
+    files_with_dates.sort(key=lambda x: x[1] if x[1] else datetime.min, reverse=True)
 
     # Filter by date if specified
     if for_date:

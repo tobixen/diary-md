@@ -15,10 +15,10 @@ def find_git_root(filepath: Path) -> Path | None:
     """
     try:
         result = subprocess.run(
-            ['git', 'rev-parse', '--show-toplevel'],
+            ["git", "rev-parse", "--show-toplevel"],
             cwd=filepath if filepath.is_dir() else filepath.parent,
             capture_output=True,
-            text=True
+            text=True,
         )
         if result.returncode == 0:
             return Path(result.stdout.strip())
@@ -27,12 +27,7 @@ def find_git_root(filepath: Path) -> Path | None:
     return None
 
 
-def git_commit(
-    repo_dir: Path,
-    files: list[Path | str],
-    message: str,
-    co_author: bool = True
-) -> bool:
+def git_commit(repo_dir: Path, files: list[Path | str], message: str, co_author: bool = True) -> bool:
     """Commit changes to git.
 
     Args:
@@ -55,21 +50,13 @@ def git_commit(
                 rel_files.append(str(f))
 
         # Stage files
-        result = subprocess.run(
-            ['git', 'add'] + rel_files,
-            cwd=repo_dir,
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["git", "add"] + rel_files, cwd=repo_dir, capture_output=True, text=True)
         if result.returncode != 0:
             print(f"Error adding files: {result.stderr}")
             return False
 
         # Check if there are changes to commit
-        status = subprocess.run(
-            ['git', 'diff', '--cached', '--quiet'],
-            cwd=repo_dir
-        )
+        status = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=repo_dir)
         if status.returncode == 0:
             print("Nothing to commit (no changes)")
             return True
@@ -81,12 +68,7 @@ def git_commit(
             full_message = message
 
         # Commit
-        result = subprocess.run(
-            ['git', 'commit', '-m', full_message],
-            cwd=repo_dir,
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["git", "commit", "-m", full_message], cwd=repo_dir, capture_output=True, text=True)
         if result.returncode != 0:
             if "nothing to commit" in result.stdout or "nothing to commit" in result.stderr:
                 print("Nothing to commit (no changes)")
@@ -112,12 +94,7 @@ def git_push(repo_dir: Path) -> bool:
         True if push succeeded, False otherwise
     """
     try:
-        result = subprocess.run(
-            ['git', 'push'],
-            cwd=repo_dir,
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["git", "push"], cwd=repo_dir, capture_output=True, text=True)
         if result.returncode != 0:
             print(f"Error pushing: {result.stderr}")
             return False
@@ -130,11 +107,7 @@ def git_push(repo_dir: Path) -> bool:
         return False
 
 
-def git_commit_multiple_repos(
-    modified_files: list[Path],
-    message: str,
-    co_author: bool = True
-) -> dict[Path, bool]:
+def git_commit_multiple_repos(modified_files: list[Path], message: str, co_author: bool = True) -> dict[Path, bool]:
     """Commit changes to multiple git repositories.
 
     Groups files by their git repository root and commits each.

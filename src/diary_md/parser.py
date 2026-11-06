@@ -42,7 +42,7 @@ def markdown_to_dict(file: TextIO, level: int = 1) -> dict:
     from diary_md import md_adapter
 
     # Handle non-seekable streams by reading into memory
-    file_name = getattr(file, 'name', '<stream>')
+    file_name = getattr(file, "name", "<stream>")
     content = file.read()
 
     # Parse using markdown-it-py
@@ -53,15 +53,15 @@ def markdown_to_dict(file: TextIO, level: int = 1) -> dict:
         result: dict = {}
 
         if section.content:
-            result['__content__'] = section.content
+            result["__content__"] = section.content
 
         # Add new structured data for v2 consumers
         if section.paragraphs:
-            result['__paragraphs__'] = section.paragraphs
+            result["__paragraphs__"] = section.paragraphs
         if section.list_items:
-            result['__list_items__'] = section.list_items
+            result["__list_items__"] = section.list_items
 
-        result['__file_name__'] = file_name
+        result["__file_name__"] = file_name
 
         # Process subsections recursively
         for subsection in section.subsections:
@@ -90,7 +90,7 @@ def find_or_create_date_section(content: str, target_date: datetime) -> tuple[in
     Returns:
         Tuple of (line_number, section_exists)
     """
-    date_str = target_date.strftime('%Y-%m-%d')
+    date_str = target_date.strftime("%Y-%m-%d")
     lines = content.split("\n")
 
     # Pattern matches any weekday name before the date (language-agnostic)
@@ -188,14 +188,10 @@ def find_section_end(lines: list[str], section_line: int) -> int:
 
 def _looks_like_date_header(key: str) -> bool:
     """Check if a key looks like a date header (Weekday YYYY-MM-DD)."""
-    return bool(re.match(r'^[A-Za-zæøåÆØÅ]+ 20\d\d-\d\d-\d\d', key))
+    return bool(re.match(r"^[A-Za-zæøåÆØÅ]+ 20\d\d-\d\d-\d\d", key))
 
 
-def parse_diary_to_list(
-    md_dict: dict,
-    start: datetime | None = None,
-    end: datetime | None = None
-) -> list[dict]:
+def parse_diary_to_list(md_dict: dict, start: datetime | None = None, end: datetime | None = None) -> list[dict]:
     """Convert parsed markdown dict to a list of diary entries.
 
     Args:
@@ -209,18 +205,18 @@ def parse_diary_to_list(
     ret_list = []
 
     # Check if top-level keys are date headers (no trip wrapper)
-    non_meta_keys = [k for k in md_dict if not k.startswith('__')]
+    non_meta_keys = [k for k in md_dict if not k.startswith("__")]
     if non_meta_keys and all(_looks_like_date_header(k) for k in non_meta_keys):
         # Direct date headers at top level - wrap in synthetic trip
-        defaults = {'trip': '__default__'}
+        defaults = {"trip": "__default__"}
         entries = _parse_subdict_to_list(md_dict, defaults, start, end)
         ret_list.extend(entries)
     else:
         # Normal structure: trip headers containing date headers
         for header in md_dict:
-            if header.startswith('__'):
+            if header.startswith("__"):
                 continue
-            defaults = {'trip': header}
+            defaults = {"trip": header}
             entries = _parse_subdict_to_list(md_dict[header], defaults, start, end)
             ret_list.extend(entries)
 
@@ -228,10 +224,7 @@ def parse_diary_to_list(
 
 
 def _parse_subdict_to_list(
-    input_dict: dict,
-    defaults: dict,
-    start: datetime | None = None,
-    end: datetime | None = None
+    input_dict: dict, defaults: dict, start: datetime | None = None, end: datetime | None = None
 ) -> list[dict]:
     """Parse a section's subdict into diary entries.
 
@@ -240,7 +233,7 @@ def _parse_subdict_to_list(
     ret_list = []
 
     for day in input_dict:
-        if day == 'TODO' or day.startswith('__'):
+        if day == "TODO" or day.startswith("__"):
             continue
 
         entry = defaults.copy()
@@ -250,10 +243,10 @@ def _parse_subdict_to_list(
         if not findings:
             raise DiaryParseError(
                 "Section header doesn't match expected format 'Weekday YYYY-MM-DD ...'",
-                file_name=input_dict[day].get('__file_name__'),
-                file_position=input_dict[day].get('__file_position__'),
+                file_name=input_dict[day].get("__file_name__"),
+                file_position=input_dict[day].get("__file_position__"),
                 section=day,
-                content=input_dict[day].get('__content__', '')[:100]
+                content=input_dict[day].get("__content__", "")[:100],
             )
 
         dow, date_str, itinerary = findings.groups()
@@ -262,10 +255,10 @@ def _parse_subdict_to_list(
         if dow not in VALID_WEEKDAYS:
             raise DiaryParseError(
                 f"Unknown weekday '{dow}'",
-                file_name=input_dict[day].get('__file_name__'),
-                file_position=input_dict[day].get('__file_position__'),
+                file_name=input_dict[day].get("__file_name__"),
+                file_position=input_dict[day].get("__file_position__"),
                 section=day,
-                date=date_str
+                date=date_str,
             )
 
         dt = datetime.strptime(date_str, DATE_FORMAT)
@@ -276,12 +269,11 @@ def _parse_subdict_to_list(
         if actual_index != expected_index:
             expected_name = WEEKDAYS_EN[expected_index]
             raise DiaryParseError(
-                f"Weekday mismatch: '{dow}' is not the correct day for {date_str} "
-                f"(should be {expected_name})",
-                file_name=input_dict[day].get('__file_name__'),
-                file_position=input_dict[day].get('__file_position__'),
+                f"Weekday mismatch: '{dow}' is not the correct day for {date_str} (should be {expected_name})",
+                file_name=input_dict[day].get("__file_name__"),
+                file_position=input_dict[day].get("__file_position__"),
                 section=day,
-                date=date_str
+                date=date_str,
             )
 
         # Apply date filters
@@ -292,7 +284,7 @@ def _parse_subdict_to_list(
 
         # Parse itinerary into list
         itinerary_list = []
-        parts = itinerary.split(' - ')
+        parts = itinerary.split(" - ")
         for part in parts:
             match = re.match(r"^([^(]*)(\(.*\))?$", part)
             if match:
@@ -300,10 +292,10 @@ def _parse_subdict_to_list(
                 if match.group(2):
                     itinerary_list.append(match.group(2))
 
-        entry['dow'] = dow
-        entry['date'] = date_str
-        entry['itenary'] = itinerary
-        entry['itenary_list'] = itinerary_list
+        entry["dow"] = dow
+        entry["date"] = date_str
+        entry["itenary"] = itinerary
+        entry["itenary_list"] = itinerary_list
         entry.update(input_dict[day])
         ret_list.append(entry)
 
@@ -318,15 +310,15 @@ def _parse_subdict_to_list(
 
 def _validate_chronological_order(entries: list[dict]) -> None:
     """Validate that entries are in chronological order."""
-    last_fn = ''
+    last_fn = ""
     last_fp = 0
-    last_dt = '1970-01-01'
-    last_section = ''
+    last_dt = "1970-01-01"
+    last_section = ""
 
     for entry in entries:
-        fn = entry.get('__file_name__', '')
-        fp = entry.get('__file_position__', 0)
-        dt = entry['date']
+        fn = entry.get("__file_name__", "")
+        fp = entry.get("__file_position__", 0)
+        dt = entry["date"]
         section = f"{entry['dow']} {entry['date']} {entry.get('itenary', '')}"
 
         # Check chronological order
@@ -337,7 +329,7 @@ def _validate_chronological_order(entries: list[dict]) -> None:
                 file_position=fp,
                 section=section,
                 date=dt,
-                content=f"Previous: {last_section} ({last_dt})"
+                content=f"Previous: {last_section} ({last_dt})",
             )
 
         # Check for duplicate entries (same date, same file, same position)
@@ -348,7 +340,7 @@ def _validate_chronological_order(entries: list[dict]) -> None:
                 file_position=fp,
                 section=section,
                 date=dt,
-                content=f"Previous: {last_section} ({last_dt})"
+                content=f"Previous: {last_section} ({last_dt})",
             )
 
         last_fn = fn
@@ -372,24 +364,24 @@ def parse_diary_expenses(filepath: Path) -> list[dict]:
         return expenses
 
     # Pattern for date headers
-    date_pattern = re.compile(r'^## \w+ (\d{4}-\d{2}-\d{2})')
+    date_pattern = re.compile(r"^## \w+ (\d{4}-\d{2}-\d{2})")
 
     # Pattern to detect already reconciled entries
-    reconciled_pattern = re.compile(r'\(reconciled:')
+    reconciled_pattern = re.compile(r"\(reconciled:")
 
     # Pattern to detect cash expenses
-    cash_pattern = re.compile(r'\(cash\)', re.IGNORECASE)
+    cash_pattern = re.compile(r"\(cash\)", re.IGNORECASE)
 
     # Pattern for split markers
     split_marker_pattern = re.compile(
-        r'\((reconciled:\s*)?(\w+)\s*-\s*(\d{4}-\d{2}-\d{2})\s*-\s*(\w+):(\d+\.?\d*)/(\d+)\)'
+        r"\((reconciled:\s*)?(\w+)\s*-\s*(\d{4}-\d{2}-\d{2})\s*-\s*(\w+):(\d+\.?\d*)/(\d+)\)"
     )
 
     current_date = None
 
-    with open(filepath, encoding='utf-8') as f:
+    with open(filepath, encoding="utf-8") as f:
         for line_num, line in enumerate(f, start=1):
-            original_line = line.rstrip('\n')
+            original_line = line.rstrip("\n")
             line_stripped = line.strip()
 
             # Check for date header
@@ -424,16 +416,18 @@ def parse_diary_expenses(filepath: Path) -> list[dict]:
             if cash_pattern.search(line_stripped):
                 continue
 
-            expenses.append({
-                'date': current_date,
-                'amount': expense.amount,
-                'currency': expense.currency,
-                'expense_type': expense.expense_type,
-                'description': expense.description,
-                'source_file': str(filepath),
-                'line_num': line_num,
-                'original_line': original_line,
-                'split_marker': split_marker,
-            })
+            expenses.append(
+                {
+                    "date": current_date,
+                    "amount": expense.amount,
+                    "currency": expense.currency,
+                    "expense_type": expense.expense_type,
+                    "description": expense.description,
+                    "source_file": str(filepath),
+                    "line_num": line_num,
+                    "original_line": original_line,
+                    "split_marker": split_marker,
+                }
+            )
 
     return expenses

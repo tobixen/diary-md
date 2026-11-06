@@ -48,28 +48,17 @@ class TestDateHeader:
 
     def test_format_simple(self):
         """Format a simple date header."""
-        header = DateHeader(
-            date=datetime(2026, 1, 20),
-            weekday="Monday"
-        )
+        header = DateHeader(date=datetime(2026, 1, 20), weekday="Monday")
         assert header.format() == "## Monday 2026-01-20"
 
     def test_format_with_itinerary(self):
         """Format date header with itinerary."""
-        header = DateHeader(
-            date=datetime(2026, 1, 20),
-            weekday="Monday",
-            itinerary="- Oslo - Bergen"
-        )
+        header = DateHeader(date=datetime(2026, 1, 20), weekday="Monday", itinerary="- Oslo - Bergen")
         assert header.format() == "## Monday 2026-01-20 - Oslo - Bergen"
 
     def test_format_minimal(self):
         """Format without itinerary."""
-        header = DateHeader(
-            date=datetime(2026, 1, 20),
-            weekday="Monday",
-            itinerary="- Oslo - Bergen"
-        )
+        header = DateHeader(date=datetime(2026, 1, 20), weekday="Monday", itinerary="- Oslo - Bergen")
         assert header.format_minimal() == "## Monday 2026-01-20"
 
 
@@ -95,9 +84,7 @@ class TestExpenseLine:
 
     def test_parse_expense_with_reconciliation(self):
         """Parse expense with reconciliation marker."""
-        expense = ExpenseLine.parse(
-            "* EUR 15.72 - groceries - Lidl (reconciled: N26 - 2026-01-20 - EUR:15.72)"
-        )
+        expense = ExpenseLine.parse("* EUR 15.72 - groceries - Lidl (reconciled: N26 - 2026-01-20 - EUR:15.72)")
         assert expense is not None
         assert expense.currency == "EUR"
         assert expense.amount == 15.72
@@ -107,7 +94,7 @@ class TestExpenseLine:
 
     def test_parse_different_currencies(self):
         """Parse expenses in different currencies."""
-        currencies = ['EUR', 'BGN', 'NOK', 'USD', 'GBP', 'SEK', 'TRY', 'PLN']
+        currencies = ["EUR", "BGN", "NOK", "USD", "GBP", "SEK", "TRY", "PLN"]
         for currency in currencies:
             expense = ExpenseLine.parse(f"* {currency} 10.00 - test - description")
             assert expense is not None
@@ -140,12 +127,7 @@ class TestExpenseLine:
 
     def test_format_simple(self):
         """Format a simple expense line."""
-        expense = ExpenseLine(
-            currency="EUR",
-            amount=15.72,
-            expense_type="groceries",
-            description="Lidl"
-        )
+        expense = ExpenseLine(currency="EUR", amount=15.72, expense_type="groceries", description="Lidl")
         assert expense.format() == "* EUR 15.72 - groceries - Lidl"
 
     def test_format_with_reconciliation(self):
@@ -155,7 +137,7 @@ class TestExpenseLine:
             amount=15.72,
             expense_type="groceries",
             description="Lidl",
-            reconciliation_marker="(reconciled: N26 - 2026-01-20 - EUR:15.72)"
+            reconciliation_marker="(reconciled: N26 - 2026-01-20 - EUR:15.72)",
         )
         formatted = expense.format()
         assert "(reconciled: N26 - 2026-01-20 - EUR:15.72)" in formatted
@@ -167,7 +149,7 @@ class TestExpenseLine:
             amount=15.72,
             expense_type="groceries",
             description="Lidl",
-            reconciliation_marker="(reconciled: N26 - 2026-01-20 - EUR:15.72)"
+            reconciliation_marker="(reconciled: N26 - 2026-01-20 - EUR:15.72)",
         )
         formatted = expense.format(include_reconciliation=False)
         assert "(reconciled:" not in formatted
@@ -178,40 +160,40 @@ class TestSectionAliases:
 
     def test_find_section_english(self):
         """Find section by English name."""
-        entry = {'Expenses': {'__content__': 'test'}, 'Notes': {}}
-        assert find_section(entry, 'Expenses') == {'__content__': 'test'}
+        entry = {"Expenses": {"__content__": "test"}, "Notes": {}}
+        assert find_section(entry, "Expenses") == {"__content__": "test"}
 
     def test_find_section_norwegian(self):
         """Find section by Norwegian alias."""
-        entry = {'Kostnader': {'__content__': 'test'}, 'Tidsbruk': {}}
-        assert find_section(entry, 'Expenses') == {'__content__': 'test'}
+        entry = {"Kostnader": {"__content__": "test"}, "Tidsbruk": {}}
+        assert find_section(entry, "Expenses") == {"__content__": "test"}
 
     def test_find_section_missing(self):
         """Return None when section not found."""
-        entry = {'Notes': {}, 'Weather': {}}
-        assert find_section(entry, 'Expenses') is None
+        entry = {"Notes": {}, "Weather": {}}
+        assert find_section(entry, "Expenses") is None
 
     def test_find_section_name_english(self):
         """Return actual English name used."""
-        entry = {'Expenses': {}}
-        assert find_section_name(entry, 'Expenses') == 'Expenses'
+        entry = {"Expenses": {}}
+        assert find_section_name(entry, "Expenses") == "Expenses"
 
     def test_find_section_name_norwegian(self):
         """Return actual Norwegian name used."""
-        entry = {'Kostnader': {}}
-        assert find_section_name(entry, 'Expenses') == 'Kostnader'
+        entry = {"Kostnader": {}}
+        assert find_section_name(entry, "Expenses") == "Kostnader"
 
     def test_find_section_name_missing(self):
         """Return None when section not found."""
-        entry = {'Notes': {}}
-        assert find_section_name(entry, 'Expenses') is None
+        entry = {"Notes": {}}
+        assert find_section_name(entry, "Expenses") is None
 
     def test_time_tracking_alias(self):
         """Find Time tracking by Norwegian alias."""
-        entry = {'Tidsbruk': {'__content__': 'hours'}}
-        assert find_section(entry, 'Time tracking') == {'__content__': 'hours'}
+        entry = {"Tidsbruk": {"__content__": "hours"}}
+        assert find_section(entry, "Time tracking") == {"__content__": "hours"}
 
     def test_time_tracking_case_variant(self):
         """Find Time tracking by case variant."""
-        entry = {'Time Tracking': {'__content__': 'hours'}}
-        assert find_section(entry, 'Time tracking') == {'__content__': 'hours'}
+        entry = {"Time Tracking": {"__content__": "hours"}}
+        assert find_section(entry, "Time tracking") == {"__content__": "hours"}

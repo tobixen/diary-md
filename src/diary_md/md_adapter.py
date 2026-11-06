@@ -11,6 +11,7 @@ does not model (tables, code blocks, HTML, deep lists) is lost or reordered.
 top of that.  Only ATX headings (``# ...``) at the top level start a section:
 a setext underline (``---`` under a line of text) is a rule, not a heading.
 """
+
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -32,13 +33,14 @@ class MarkdownSection:
         subsections: Nested sections under this heading
         parent: Parent section (None for top-level)
     """
+
     heading: str
     level: int
-    content: str = ''
+    content: str = ""
     paragraphs: list[str] = field(default_factory=list)
     list_items: list[dict[str, Any]] = field(default_factory=list)
-    subsections: list['MarkdownSection'] = field(default_factory=list)
-    parent: 'MarkdownSection | None' = None
+    subsections: list["MarkdownSection"] = field(default_factory=list)
+    parent: "MarkdownSection | None" = None
 
 
 def parse_markdown_string(content: str) -> list[MarkdownSection]:
@@ -51,11 +53,11 @@ def parse_markdown_string(content: str) -> list[MarkdownSection]:
     Returns:
         List of top-level MarkdownSection objects
     """
-    md = MarkdownIt().disable('lheading')
+    md = MarkdownIt().disable("lheading")
     tokens = md.parse(content)
     # Split on \n only, as markdown-it does: str.splitlines() also breaks on
     # form feeds, U+2028 and the like, which would shift every token.map after them
-    lines = content.replace('\r\n', '\n').replace('\r', '\n').split('\n')
+    lines = content.replace("\r\n", "\n").replace("\r", "\n").split("\n")
 
     sections: list[MarkdownSection] = []
     section_stack: list[MarkdownSection] = []
@@ -70,17 +72,17 @@ def parse_markdown_string(content: str) -> list[MarkdownSection]:
                 body.pop(0)
             while body and not body[-1].strip():
                 body.pop()
-            current.content = '\n'.join(body)
+            current.content = "\n".join(body)
 
     i = 0
     while i < len(tokens):
         token = tokens[i]
 
-        if token.type == 'heading_open' and token.level == 0:
+        if token.type == "heading_open" and token.level == 0:
             close_body(token.map[0])
             level = int(token.tag[1])  # h1 -> 1, h2 -> 2, etc.
-            heading_text = ''
-            if i + 1 < len(tokens) and tokens[i + 1].type == 'inline':
+            heading_text = ""
+            if i + 1 < len(tokens) and tokens[i + 1].type == "inline":
                 heading_text = tokens[i + 1].content
                 i += 1
 
@@ -99,8 +101,8 @@ def parse_markdown_string(content: str) -> list[MarkdownSection]:
             section_stack.append(new_section)
             current, body_start = new_section, token.map[1]
 
-        elif token.type == 'paragraph_open' and token.level == 0:
-            if i + 1 < len(tokens) and tokens[i + 1].type == 'inline':
+        elif token.type == "paragraph_open" and token.level == 0:
+            if i + 1 < len(tokens) and tokens[i + 1].type == "inline":
                 para_text = tokens[i + 1].content
                 if section_stack:
                     section_stack[-1].paragraphs.append(para_text)
@@ -118,7 +120,7 @@ def parse_markdown_string(content: str) -> list[MarkdownSection]:
     return sections
 
 
-_LIST_OPEN = ('bullet_list_open', 'ordered_list_open')
+_LIST_OPEN = ("bullet_list_open", "ordered_list_open")
 
 
 def _parse_list(tokens: list, start_i: int) -> tuple[list[dict[str, Any]], int]:
@@ -132,29 +134,29 @@ def _parse_list(tokens: list, start_i: int) -> tuple[list[dict[str, Any]], int]:
         Tuple of (list of item dicts, index of the list_close token)
     """
     items = []
-    close = tokens[start_i].type.replace('_open', '_close')
+    close = tokens[start_i].type.replace("_open", "_close")
     i = start_i + 1
 
     while i < len(tokens) and tokens[i].type != close:
         token = tokens[i]
 
-        if token.type == 'list_item_open':
-            item: dict[str, Any] = {'text': '', 'nested': []}
+        if token.type == "list_item_open":
+            item: dict[str, Any] = {"text": "", "nested": []}
             paragraphs = []
             i += 1
 
-            while i < len(tokens) and tokens[i].type != 'list_item_close':
-                if tokens[i].type == 'paragraph_open':
-                    if i + 1 < len(tokens) and tokens[i + 1].type == 'inline':
+            while i < len(tokens) and tokens[i].type != "list_item_close":
+                if tokens[i].type == "paragraph_open":
+                    if i + 1 < len(tokens) and tokens[i + 1].type == "inline":
                         paragraphs.append(tokens[i + 1].content)
                         i += 1
                 elif tokens[i].type in _LIST_OPEN:
                     nested_items, end_i = _parse_list(tokens, i)
-                    item['nested'].extend(nested_items)
+                    item["nested"].extend(nested_items)
                     i = end_i
                 i += 1
 
-            item['text'] = '\n\n'.join(paragraphs)
+            item["text"] = "\n\n".join(paragraphs)
             items.append(item)
         else:
             i += 1
@@ -214,9 +216,9 @@ def get_all_list_items(section: MarkdownSection, include_nested: bool = True) ->
 def _item_texts(items: list[dict[str, Any]], include_nested: bool) -> list[str]:
     texts = []
     for item in items:
-        texts.append(item['text'])
+        texts.append(item["text"])
         if include_nested:
-            texts.extend(_item_texts(item.get('nested', []), include_nested))
+            texts.extend(_item_texts(item.get("nested", []), include_nested))
     return texts
 
 

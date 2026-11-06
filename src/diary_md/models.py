@@ -7,8 +7,8 @@ from datetime import datetime
 DATE_FORMAT = "%Y-%m-%d"
 
 # Valid weekday names (English and Norwegian)
-WEEKDAYS_EN = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')
-WEEKDAYS_NO = ('Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag')
+WEEKDAYS_EN = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+WEEKDAYS_NO = ("Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag", "Søndag")
 VALID_WEEKDAYS = WEEKDAYS_EN + WEEKDAYS_NO
 
 # Mapping from weekday name to day-of-week index (Monday=0, Sunday=6)
@@ -18,13 +18,13 @@ WEEKDAY_TO_INDEX.update({day: i for i, day in enumerate(WEEKDAYS_NO)})
 # Section name aliases (canonical English name -> all known equivalents)
 # This allows commands to work with diaries in any supported language
 SECTION_ALIASES = {
-    'Expenses': ['Kostnader', 'Utgifter'],
-    'Maintenance': ['Vedlikehold'],
-    'Time tracking': ['Tidsbruk', 'Time Tracking'],
-    'Weather': ['Vær'],
-    'Notes': ['Notater'],
-    'Plans': ['Planer'],
-    'Embarkments and disembarkments': ['Av- og påmønstringer'],
+    "Expenses": ["Kostnader", "Utgifter"],
+    "Maintenance": ["Vedlikehold"],
+    "Time tracking": ["Tidsbruk", "Time Tracking"],
+    "Weather": ["Vær"],
+    "Notes": ["Notater"],
+    "Plans": ["Planer"],
+    "Embarkments and disembarkments": ["Av- og påmønstringer"],
 }
 
 # Reverse mapping: any name -> canonical name
@@ -73,8 +73,22 @@ def find_section_name(entry: dict, canonical_name: str) -> str | None:
 
 # Supported currencies
 SUPPORTED_CURRENCIES = (
-    'EUR', 'BGN', 'NOK', 'USD', 'GBP', 'SEK', 'DKK', 'PLN', 'TRY', 'CHF',
-    'HRK', 'RON', 'RSD', 'ALL', 'MKD', 'BAM',
+    "EUR",
+    "BGN",
+    "NOK",
+    "USD",
+    "GBP",
+    "SEK",
+    "DKK",
+    "PLN",
+    "TRY",
+    "CHF",
+    "HRK",
+    "RON",
+    "RSD",
+    "ALL",
+    "MKD",
+    "BAM",
 )
 
 
@@ -87,7 +101,7 @@ class DateHeader:
     itinerary: str | None = None
 
     @classmethod
-    def parse(cls, line: str) -> 'DateHeader | None':
+    def parse(cls, line: str) -> "DateHeader | None":
         """Parse a date header line.
 
         Returns DateHeader if line matches, None otherwise.
@@ -97,7 +111,7 @@ class DateHeader:
             ## Monday 2026-01-20 - Oslo
             ## Monday 2026-01-20 - Oslo - Bergen
         """
-        pattern = r'^##\s+(\w+)\s+(\d{4}-\d{2}-\d{2})(.*)$'
+        pattern = r"^##\s+(\w+)\s+(\d{4}-\d{2}-\d{2})(.*)$"
         match = re.match(pattern, line.strip())
         if not match:
             return None
@@ -147,17 +161,17 @@ class ExpenseLine:
     # Pattern for parsing expense lines
     # Note: expense type can be multi-word like "harbour due", "taxi fare"
     _PATTERN = re.compile(
-        r'^\*\s+(' + '|'.join(SUPPORTED_CURRENCIES) + r')\s+'
-        r'(-?\d+(?:\.\d+)?)\s+-\s+'
-        r'([\w\s]+?)\s+-\s+'
-        r'(.+)$'
+        r"^\*\s+(" + "|".join(SUPPORTED_CURRENCIES) + r")\s+"
+        r"(-?\d+(?:\.\d+)?)\s+-\s+"
+        r"([\w\s]+?)\s+-\s+"
+        r"(.+)$"
     )
 
     # Pattern for reconciliation markers
-    _RECONCILED_PATTERN = re.compile(r'\(reconciled:[^)]+\)')
+    _RECONCILED_PATTERN = re.compile(r"\(reconciled:[^)]+\)")
 
     @classmethod
-    def parse(cls, line: str) -> 'ExpenseLine | None':
+    def parse(cls, line: str) -> "ExpenseLine | None":
         """Parse an expense line.
 
         Returns ExpenseLine if line matches, None otherwise.
@@ -180,7 +194,7 @@ class ExpenseLine:
         if marker_match:
             reconciliation_marker = marker_match.group(0)
             # Remove marker from description for clean parsing
-            description = description[:marker_match.start()].strip()
+            description = description[: marker_match.start()].strip()
 
         return cls(
             currency=currency,

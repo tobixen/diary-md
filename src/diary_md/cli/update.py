@@ -34,34 +34,34 @@ def detect_diary_language(content: str) -> str:
         'no' for Norwegian, 'en' for English (default)
     """
     no_pattern = re.compile(
-        r'^## (?:' + '|'.join(WEEKDAYS_NO) + r') \d{4}-\d{2}-\d{2}',
+        r"^## (?:" + "|".join(WEEKDAYS_NO) + r") \d{4}-\d{2}-\d{2}",
         re.MULTILINE,
     )
     if no_pattern.search(content):
-        return 'no'
-    return 'en'
+        return "no"
+    return "en"
 
 
-def format_date_header(dt: datetime, language: str = 'en') -> str:
+def format_date_header(dt: datetime, language: str = "en") -> str:
     """Format date for diary header (## Weekday YYYY-MM-DD).
 
     Args:
         dt: The date
         language: 'en' for English, 'no' for Norwegian
     """
-    if language == 'no':
+    if language == "no":
         weekday = WEEKDAYS_NO[dt.weekday()]
     else:
-        weekday = dt.strftime('%A')
+        weekday = dt.strftime("%A")
     return f"## {weekday} {dt.strftime('%Y-%m-%d')}"
 
 
-def format_section_header(section_name: str, language: str = 'en') -> str:
+def format_section_header(section_name: str, language: str = "en") -> str:
     """Format a ### section header, using the appropriate language.
 
     For Norwegian, uses the first alias from SECTION_ALIASES.
     """
-    if language == 'no':
+    if language == "no":
         canonical = section_name.title()
         aliases = SECTION_ALIASES.get(canonical, [])
         if aliases:
@@ -74,13 +74,7 @@ def format_expense_line(amount: float, currency: str, expense_type: str, descrip
     return f"* {currency} {amount:.2f} - {expense_type} - {description}"
 
 
-def update_diary(
-    diary_file: Path,
-    target_date: datetime,
-    section: str,
-    line: str,
-    dry_run: bool = False
-) -> None:
+def update_diary(diary_file: Path, target_date: datetime, section: str, line: str, dry_run: bool = False) -> None:
     """Update the diary with a new entry."""
     if not diary_file.exists():
         click.echo(f"Error: Diary file not found: {diary_file}", err=True)
@@ -160,12 +154,7 @@ def update_diary(
         click.echo(f"Added: {line}")
 
 
-def ensure_section_exists(
-    diary_file: Path,
-    target_date: datetime,
-    section: str,
-    dry_run: bool = False
-) -> bool:
+def ensure_section_exists(diary_file: Path, target_date: datetime, section: str, dry_run: bool = False) -> bool:
     """Ensure date and section exist in diary, but don't add any content.
 
     Returns True if file was modified.
@@ -231,18 +220,21 @@ def ensure_section_exists(
 
 
 @click.command()
-@click.option('--section', '-s', default='expenses', help='Section name (default: expenses)')
-@click.option('--date', '-d', default=datetime.now().strftime("%Y-%m-%d"), help='Date (YYYY-MM-DD, default: today)')
-@click.option('--line', '-l', help="Full line to add (e.g., 'EUR 7.10 - groceries - Lidl')")
-@click.option('--amount', '-a', type=float, help='Amount (used with --currency, --type, --description)')
-@click.option('--currency', '-c', default='EUR', help='Currency (default: EUR)')
-@click.option('--type', '-t', 'expense_type', default='groceries', help='Expense type (default: groceries)')
-@click.option('--description', help="Description (e.g., 'Lidl (milk, bread)')")
-@click.option('--directory', type=click.Path(exists=True, file_okay=False, path_type=Path),
-              help='Directory to find diary files in (default: current directory)')
-@click.option('--commit', is_flag=True, help='Git commit after updating')
-@click.option('--push', is_flag=True, help='Git push after committing (implies --commit)')
-@click.option('--dry-run', '-n', is_flag=True, help='Show what would be done without modifying files')
+@click.option("--section", "-s", default="expenses", help="Section name (default: expenses)")
+@click.option("--date", "-d", default=datetime.now().strftime("%Y-%m-%d"), help="Date (YYYY-MM-DD, default: today)")
+@click.option("--line", "-l", help="Full line to add (e.g., 'EUR 7.10 - groceries - Lidl')")
+@click.option("--amount", "-a", type=float, help="Amount (used with --currency, --type, --description)")
+@click.option("--currency", "-c", default="EUR", help="Currency (default: EUR)")
+@click.option("--type", "-t", "expense_type", default="groceries", help="Expense type (default: groceries)")
+@click.option("--description", help="Description (e.g., 'Lidl (milk, bread)')")
+@click.option(
+    "--directory",
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
+    help="Directory to find diary files in (default: current directory)",
+)
+@click.option("--commit", is_flag=True, help="Git commit after updating")
+@click.option("--push", is_flag=True, help="Git push after committing (implies --commit)")
+@click.option("--dry-run", "-n", is_flag=True, help="Show what would be done without modifying files")
 def update(section, date, line, amount, currency, expense_type, description, directory, commit, push, dry_run):
     """Add an entry to the diary."""
     # Parse date
@@ -260,7 +252,9 @@ def update(section, date, line, amount, currency, expense_type, description, dir
     elif amount is not None and description:
         entry_line = format_expense_line(amount, currency, expense_type, description)
     elif description:
-        raise click.UsageError("--description requires --amount for expense entries. Use --line for non-expense entries.")
+        raise click.UsageError(
+            "--description requires --amount for expense entries. Use --line for non-expense entries."
+        )
 
     # Update diary
     if entry_line:

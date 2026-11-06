@@ -14,31 +14,28 @@ class TestDigestExpenses:
     def test_expenses_basic(self, sample_diary_file):
         """Parse and summarize expenses from diary."""
         runner = CliRunner()
-        result = runner.invoke(digest, ['--diary', str(sample_diary_file), 'expenses'])
+        result = runner.invoke(digest, ["--diary", str(sample_diary_file), "expenses"])
 
         assert result.exit_code == 0
-        assert 'Expenses by category' in result.output
-        assert 'groceries' in result.output
-        assert 'Total expenses' in result.output
+        assert "Expenses by category" in result.output
+        assert "groceries" in result.output
+        assert "Total expenses" in result.output
 
     def test_expenses_currency_conversion(self, sample_diary_file):
         """Expenses in different currencies are converted to EUR."""
         runner = CliRunner()
-        result = runner.invoke(digest, ['--diary', str(sample_diary_file), 'expenses'])
+        result = runner.invoke(digest, ["--diary", str(sample_diary_file), "expenses"])
 
         assert result.exit_code == 0
         # NOK expenses should be converted
-        assert 'EUR' in result.output
+        assert "EUR" in result.output
 
     def test_expenses_with_date_filter(self, sample_diary_file):
         """Filter expenses by date range."""
         runner = CliRunner()
-        result = runner.invoke(digest, [
-            '--diary', str(sample_diary_file),
-            '--from', '2026-01-20',
-            '--to', '2026-01-20',
-            'expenses'
-        ])
+        result = runner.invoke(
+            digest, ["--diary", str(sample_diary_file), "--from", "2026-01-20", "--to", "2026-01-20", "expenses"]
+        )
 
         assert result.exit_code == 0
 
@@ -50,19 +47,16 @@ class TestDigestFindAllSubsections:
         """Find all subsection titles in diary."""
         # Create a config file with allowable_subsections
         config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({
-            "allowable_subsections": ["Expenses", "Notes", "Weather"]
-        }))
+        config_file.write_text(json.dumps({"allowable_subsections": ["Expenses", "Notes", "Weather"]}))
 
         runner = CliRunner()
-        result = runner.invoke(digest, [
-            '--diary', str(sample_diary_file),
-            'find-all-subsections', '--config', str(config_file)
-        ])
+        result = runner.invoke(
+            digest, ["--diary", str(sample_diary_file), "find-all-subsections", "--config", str(config_file)]
+        )
 
         assert result.exit_code == 0
-        assert 'Allowable, but missing' in result.output
-        assert 'Not allowable, but found' in result.output
+        assert "Allowable, but missing" in result.output
+        assert "Not allowable, but found" in result.output
 
     def test_find_subsections_reports_non_standard(self, tmp_path):
         """Report non-standard subsection names."""
@@ -80,18 +74,15 @@ Some content here.
 
         # Create a config file that doesn't allow "Custom Section"
         config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({
-            "allowable_subsections": ["Expenses", "Notes"]
-        }))
+        config_file.write_text(json.dumps({"allowable_subsections": ["Expenses", "Notes"]}))
 
         runner = CliRunner()
-        result = runner.invoke(digest, [
-            '--diary', str(diary_file),
-            'find-all-subsections', '--config', str(config_file)
-        ])
+        result = runner.invoke(
+            digest, ["--diary", str(diary_file), "find-all-subsections", "--config", str(config_file)]
+        )
 
         assert result.exit_code == 0
-        assert 'Not allowed: Custom Section' in result.output
+        assert "Not allowed: Custom Section" in result.output
 
 
 class TestDigestMalformedDateHeader:
@@ -125,32 +116,31 @@ Header above is missing its date.
         config_file.write_text("{}")
 
         runner = CliRunner()
-        result = runner.invoke(digest, [
-            '--diary', str(broken_diary_file),
-            'find-all-subsections', '--config', str(config_file)
-        ])
+        result = runner.invoke(
+            digest, ["--diary", str(broken_diary_file), "find-all-subsections", "--config", str(config_file)]
+        )
 
         assert result.exit_code == 0
-        assert 'Expenses' in result.output
-        assert 'Notes' in result.output
+        assert "Expenses" in result.output
+        assert "Notes" in result.output
 
     def test_export_web_json_ignores_date_parse_errors(self, broken_diary_file):
         """export-web-json works off the raw dict as well."""
         runner = CliRunner()
-        result = runner.invoke(digest, ['--diary', str(broken_diary_file), 'export-web-json'])
+        result = runner.invoke(digest, ["--diary", str(broken_diary_file), "export-web-json"])
 
         assert result.exit_code == 0
-        assert json.loads(result.output)['trips']
+        assert json.loads(result.output)["trips"]
 
     def test_date_parse_error_is_reported_without_traceback(self, broken_diary_file):
         """Commands that do need dates fail cleanly, not with a stack trace."""
         runner = CliRunner()
-        result = runner.invoke(digest, ['--diary', str(broken_diary_file), 'expenses'])
+        result = runner.invoke(digest, ["--diary", str(broken_diary_file), "expenses"])
 
         assert result.exit_code != 0
         assert result.exception is None or isinstance(result.exception, SystemExit)
         assert "doesn't match expected format" in result.output
-        assert 'Traceback' not in result.output
+        assert "Traceback" not in result.output
 
 
 class TestDigestHelp:
@@ -159,10 +149,10 @@ class TestDigestHelp:
     def test_help_mentions_stdin_default(self):
         """--diary defaults to stdin; the user needs to be told."""
         runner = CliRunner()
-        result = runner.invoke(digest, ['--help'])
+        result = runner.invoke(digest, ["--help"])
 
         assert result.exit_code == 0
-        assert 'stdin' in result.output.lower()
+        assert "stdin" in result.output.lower()
 
 
 class TestDigestSelectSubsection:
@@ -171,24 +161,22 @@ class TestDigestSelectSubsection:
     def test_select_expenses_section(self, sample_diary_file):
         """Extract Expenses sections from diary."""
         runner = CliRunner()
-        result = runner.invoke(digest, [
-            '--diary', str(sample_diary_file),
-            'select-subsection', '--section', 'Expenses'
-        ])
+        result = runner.invoke(
+            digest, ["--diary", str(sample_diary_file), "select-subsection", "--section", "Expenses"]
+        )
 
         assert result.exit_code == 0
-        assert 'EUR' in result.output or 'NOK' in result.output
+        assert "EUR" in result.output or "NOK" in result.output
 
     def test_select_maintenance_section(self, sample_diary_file):
         """Extract Maintenance sections from diary."""
         runner = CliRunner()
-        result = runner.invoke(digest, [
-            '--diary', str(sample_diary_file),
-            'select-subsection', '--section', 'Maintenance'
-        ])
+        result = runner.invoke(
+            digest, ["--diary", str(sample_diary_file), "select-subsection", "--section", "Maintenance"]
+        )
 
         assert result.exit_code == 0
-        assert 'rudder' in result.output.lower()
+        assert "rudder" in result.output.lower()
 
 
 class TestDigestExportJson:
@@ -197,12 +185,12 @@ class TestDigestExportJson:
     def test_export_json(self, sample_diary_file):
         """Export diary as JSON."""
         runner = CliRunner()
-        result = runner.invoke(digest, ['--diary', str(sample_diary_file), 'export-json'])
+        result = runner.invoke(digest, ["--diary", str(sample_diary_file), "export-json"])
 
         assert result.exit_code == 0
         # Should be valid JSON (list)
-        assert result.output.strip().startswith('[')
-        assert result.output.strip().endswith(']')
+        assert result.output.strip().startswith("[")
+        assert result.output.strip().endswith("]")
 
 
 class TestDigestPublic:
@@ -230,109 +218,124 @@ Nobody reads this.
 
     @pytest.fixture(autouse=True)
     def no_user_config(self, tmp_path, monkeypatch):
-        monkeypatch.setattr('diary_md.cli.digest.DEFAULT_CONFIG_FILE', tmp_path / 'no-config.json')
+        monkeypatch.setattr("diary_md.cli.digest.DEFAULT_CONFIG_FILE", tmp_path / "no-config.json")
 
     @pytest.fixture
     def files(self, tmp_path):
-        diary = tmp_path / 'diary.md'
+        diary = tmp_path / "diary.md"
         diary.write_text(self.DIARY)
-        policy = tmp_path / 'public.json'
-        policy.write_text(json.dumps({
-            'reviewed_up_to': '2026-06-30',
-            'public_sections': ['Maintenance'],
-            'private_sections': ['Private'],
-            'allow_words': ['Harbourtown'],
-            'people': [{'name': 'Ingrid', 'policy': 'pseudonym', 'pseudonym': 'Astrid'}],
-        }))
+        policy = tmp_path / "public.json"
+        policy.write_text(
+            json.dumps(
+                {
+                    "reviewed_up_to": "2026-06-30",
+                    "public_sections": ["Maintenance"],
+                    "private_sections": ["Private"],
+                    "allow_words": ["Harbourtown"],
+                    "people": [{"name": "Ingrid", "policy": "pseudonym", "pseudonym": "Astrid"}],
+                }
+            )
+        )
         return diary, policy
 
     def test_check_public_reports_unknown_tokens(self, files):
         diary, policy = files
-        result = CliRunner().invoke(digest, ['--diary', str(diary), 'check-public', '--policy', str(policy)])
+        result = CliRunner().invoke(digest, ["--diary", str(diary), "check-public", "--policy", str(policy)])
         assert result.exit_code == 1
-        assert 'Zyxwort' in result.output
+        assert "Zyxwort" in result.output
 
     def test_export_refuses_with_unknown_tokens(self, files):
         diary, policy = files
-        result = CliRunner().invoke(digest, ['--diary', str(diary), 'export-web-json', '--public', str(policy)])
+        result = CliRunner().invoke(digest, ["--diary", str(diary), "export-web-json", "--public", str(policy)])
         assert result.exit_code != 0
-        assert 'Zyxwort' in result.output
-        assert 'Ingrid' not in result.output
+        assert "Zyxwort" in result.output
+        assert "Ingrid" not in result.output
 
     def test_export_public(self, files):
         diary, policy = files
         result = CliRunner().invoke(
-            digest, ['--diary', str(diary), 'export-web-json', '--public', str(policy), '--allow-unknown'])
+            digest, ["--diary", str(diary), "export-web-json", "--public", str(policy), "--allow-unknown"]
+        )
         assert result.exit_code == 0, result.output
         data = json.loads(result.stdout)
-        day = data['trips'][0]['dates'][0]
-        assert set(day['sections']) == {'', 'Maintenance'}
-        assert 'Astrid' in day['sections']['']
-        assert 'Ingrid' not in result.stdout
-        assert 'Nor this' not in result.stdout
+        day = data["trips"][0]["dates"][0]
+        assert set(day["sections"]) == {"", "Maintenance"}
+        assert "Astrid" in day["sections"][""]
+        assert "Ingrid" not in result.stdout
+        assert "Nor this" not in result.stdout
 
     def test_export_public_chapter_intro_and_left_out(self, files):
         diary, policy = files
-        diary.write_text(self.DIARY.replace('# Fake Voyage\n', '# Fake Voyage\n\nA trip with Ingrid.\n')
-                         + '\n## Tuesday 2026-07-01\n\nNot yet.\n')
+        diary.write_text(
+            self.DIARY.replace("# Fake Voyage\n", "# Fake Voyage\n\nA trip with Ingrid.\n")
+            + "\n## Tuesday 2026-07-01\n\nNot yet.\n"
+        )
         result = CliRunner().invoke(
-            digest, ['--diary', str(diary), 'export-web-json', '--public', str(policy), '--allow-unknown'])
+            digest, ["--diary", str(diary), "export-web-json", "--public", str(policy), "--allow-unknown"]
+        )
         assert result.exit_code == 0, result.output
-        trip = json.loads(result.stdout)['trips'][0]
-        assert trip['intro'] == 'A trip with "Astrid".'
-        assert trip['leftOut'] == ['after']
-        assert 'Not yet' not in result.stdout
+        trip = json.loads(result.stdout)["trips"][0]
+        assert trip["intro"] == 'A trip with "Astrid".'
+        assert trip["leftOut"] == ["after"]
+        assert "Not yet" not in result.stdout
 
     def test_export_without_intro_has_no_intro_key(self, files):
         diary, policy = files
         result = CliRunner().invoke(
-            digest, ['--diary', str(diary), 'export-web-json', '--public', str(policy), '--allow-unknown'])
-        trip = json.loads(result.stdout)['trips'][0]
-        assert 'intro' not in trip
-        assert 'leftOut' not in trip
+            digest, ["--diary", str(diary), "export-web-json", "--public", str(policy), "--allow-unknown"]
+        )
+        trip = json.loads(result.stdout)["trips"][0]
+        assert "intro" not in trip
+        assert "leftOut" not in trip
 
     def test_check_public_reports_sections_not_allowed(self, files, tmp_path):
         diary, policy = files
-        diary.write_text(self.DIARY.replace('Ingrid fixed the winch with Zyxwort.', 'ok.')
-                         + '\n### Maintenence\n\nTypo.\n')
-        config = tmp_path / 'config.json'
-        config.write_text(json.dumps({'allowable_subsections': ['Maintenance']}))
+        diary.write_text(
+            self.DIARY.replace("Ingrid fixed the winch with Zyxwort.", "ok.") + "\n### Maintenence\n\nTypo.\n"
+        )
+        config = tmp_path / "config.json"
+        config.write_text(json.dumps({"allowable_subsections": ["Maintenance"]}))
         result = CliRunner().invoke(
-            digest, ['--diary', str(diary), 'check-public', '--policy', str(policy), '--config', str(config)])
+            digest, ["--diary", str(diary), "check-public", "--policy", str(policy), "--config", str(config)]
+        )
         assert result.exit_code == 1
         # Private is in the policy's private_sections, so it is allowed too
-        assert 'Maintenence' in result.output
-        assert 'Private (' not in result.output.split('allowable_subsections')[-1]
-        assert 'Unknown capitalised' not in result.output
+        assert "Maintenence" in result.output
+        assert "Private (" not in result.output.split("allowable_subsections")[-1]
+        assert "Unknown capitalised" not in result.output
 
     def test_check_public_section_alias_counts_as_listed(self, files, tmp_path):
         diary, policy = files
-        diary.write_text(self.DIARY.replace('Ingrid fixed the winch with Zyxwort.', 'ok.')
-                         .replace('### Maintenance', '### Vedlikehold'))
-        config = tmp_path / 'config.json'
-        config.write_text(json.dumps({'allowable_subsections': ['Maintenance']}))
+        diary.write_text(
+            self.DIARY.replace("Ingrid fixed the winch with Zyxwort.", "ok.").replace(
+                "### Maintenance", "### Vedlikehold"
+            )
+        )
+        config = tmp_path / "config.json"
+        config.write_text(json.dumps({"allowable_subsections": ["Maintenance"]}))
         result = CliRunner().invoke(
-            digest, ['--diary', str(diary), 'check-public', '--policy', str(policy), '--config', str(config)])
+            digest, ["--diary", str(diary), "check-public", "--policy", str(policy), "--config", str(config)]
+        )
         assert result.exit_code == 0, result.output
 
     def test_check_public_without_allowable_list_skips_section_check(self, files):
         diary, policy = files
-        diary.write_text(self.DIARY.replace('Ingrid fixed the winch with Zyxwort.', 'ok.'))
-        result = CliRunner().invoke(digest, ['--diary', str(diary), 'check-public', '--policy', str(policy)])
+        diary.write_text(self.DIARY.replace("Ingrid fixed the winch with Zyxwort.", "ok."))
+        result = CliRunner().invoke(digest, ["--diary", str(diary), "check-public", "--policy", str(policy)])
         assert result.exit_code == 0, result.output
-        assert 'no allowable_subsections' in result.output
+        assert "no allowable_subsections" in result.output
 
     def test_bad_policy_is_a_clean_error(self, files, tmp_path):
         diary, _ = files
-        bad = tmp_path / 'bad.json'
-        bad.write_text(json.dumps({'people': [{'name': 'Ingrid', 'policy': 'sometimes'}]}))
-        result = CliRunner().invoke(digest, ['--diary', str(diary), 'check-public', '--policy', str(bad)])
+        bad = tmp_path / "bad.json"
+        bad.write_text(json.dumps({"people": [{"name": "Ingrid", "policy": "sometimes"}]}))
+        result = CliRunner().invoke(digest, ["--diary", str(diary), "check-public", "--policy", str(bad)])
         assert result.exit_code == 1
-        assert 'sometimes' in result.output
+        assert "sometimes" in result.output
         assert not isinstance(result.exception, ValueError)
 
     def test_public_options_need_public(self, files):
         diary, policy = files
-        result = CliRunner().invoke(digest, ['--diary', str(diary), 'export-web-json', '--allow-unknown'])
+        result = CliRunner().invoke(digest, ["--diary", str(diary), "export-web-json", "--allow-unknown"])
         assert result.exit_code == 2
-        assert '--public' in result.output
+        assert "--public" in result.output

@@ -60,16 +60,16 @@ class TestDetectDiaryLanguage:
     """Tests for detect_diary_language."""
 
     def test_norwegian_diary(self):
-        assert detect_diary_language(NORWEGIAN_DIARY) == 'no'
+        assert detect_diary_language(NORWEGIAN_DIARY) == "no"
 
     def test_english_diary(self):
-        assert detect_diary_language(ENGLISH_DIARY) == 'en'
+        assert detect_diary_language(ENGLISH_DIARY) == "en"
 
     def test_empty_content(self):
-        assert detect_diary_language("") == 'en'
+        assert detect_diary_language("") == "en"
 
     def test_no_date_headers(self):
-        assert detect_diary_language("# Just a title\n\nSome text.") == 'en'
+        assert detect_diary_language("# Just a title\n\nSome text.") == "en"
 
 
 class TestFormatDateHeader:
@@ -77,15 +77,15 @@ class TestFormatDateHeader:
 
     def test_english(self):
         dt = datetime(2026, 2, 6)  # Friday
-        assert format_date_header(dt, 'en') == "## Friday 2026-02-06"
+        assert format_date_header(dt, "en") == "## Friday 2026-02-06"
 
     def test_norwegian(self):
         dt = datetime(2026, 2, 6)  # Fredag
-        assert format_date_header(dt, 'no') == "## Fredag 2026-02-06"
+        assert format_date_header(dt, "no") == "## Fredag 2026-02-06"
 
     def test_norwegian_monday(self):
         dt = datetime(2026, 2, 9)  # Mandag
-        assert format_date_header(dt, 'no') == "## Mandag 2026-02-09"
+        assert format_date_header(dt, "no") == "## Mandag 2026-02-09"
 
     def test_default_is_english(self):
         dt = datetime(2026, 2, 6)
@@ -113,16 +113,12 @@ class TestFindOrCreateDateSectionNorwegian:
     """Tests for find_or_create_date_section with Norwegian content."""
 
     def test_find_existing_norwegian_date(self):
-        line_num, exists = find_or_create_date_section(
-            NORWEGIAN_DIARY, datetime(2026, 2, 6)
-        )
+        line_num, exists = find_or_create_date_section(NORWEGIAN_DIARY, datetime(2026, 2, 6))
         assert exists is True
         assert "Fredag 2026-02-06" in NORWEGIAN_DIARY.split("\n")[line_num]
 
     def test_find_nonexistent_date_in_norwegian(self):
-        line_num, exists = find_or_create_date_section(
-            NORWEGIAN_DIARY, datetime(2026, 2, 5)
-        )
+        line_num, exists = find_or_create_date_section(NORWEGIAN_DIARY, datetime(2026, 2, 5))
         assert exists is False
         # Should be inserted between 2026-02-04 and 2026-02-06
         lines = NORWEGIAN_DIARY.split("\n")
@@ -138,9 +134,7 @@ class TestFindSectionInDateWithAliases:
         """Searching for 'expenses' should find '### Kostnader'."""
         lines = NORWEGIAN_DIARY.split("\n")
         # Find Fredag 2026-02-06
-        date_line = next(
-            i for i, line in enumerate(lines) if "Fredag 2026-02-06" in line
-        )
+        date_line = next(i for i, line in enumerate(lines) if "Fredag 2026-02-06" in line)
         result = find_section_in_date(lines, date_line, "expenses")
         assert result is not None
         assert "Kostnader" in lines[result]
@@ -148,9 +142,7 @@ class TestFindSectionInDateWithAliases:
     def test_find_tidsbruk_with_time_tracking(self):
         """Searching for 'time tracking' should find '### Tidsbruk'."""
         lines = NORWEGIAN_DIARY.split("\n")
-        date_line = next(
-            i for i, line in enumerate(lines) if "Tirsdag 2026-02-03" in line
-        )
+        date_line = next(i for i, line in enumerate(lines) if "Tirsdag 2026-02-03" in line)
         result = find_section_in_date(lines, date_line, "time tracking")
         assert result is not None
         assert "Tidsbruk" in lines[result]
@@ -158,9 +150,7 @@ class TestFindSectionInDateWithAliases:
     def test_find_english_section_directly(self):
         """Searching for 'expenses' should find '### Expenses' in English diary."""
         lines = ENGLISH_DIARY.split("\n")
-        date_line = next(
-            i for i, line in enumerate(lines) if "Monday 2026-01-20" in line
-        )
+        date_line = next(i for i, line in enumerate(lines) if "Monday 2026-01-20" in line)
         result = find_section_in_date(lines, date_line, "expenses")
         assert result is not None
         assert "Expenses" in lines[result]
@@ -224,8 +214,7 @@ class TestUpdateDiaryNorwegian:
         tirsdag_line = next(i for i, line in enumerate(lines) if "Tirsdag 2026-02-03" in line)
         onsdag_line = next(i for i, line in enumerate(lines) if "Onsdag 2026-02-04" in line)
         kostnader_lines = [
-            i for i, line in enumerate(lines)
-            if "### Kostnader" in line and tirsdag_line < i < onsdag_line
+            i for i, line in enumerate(lines) if "### Kostnader" in line and tirsdag_line < i < onsdag_line
         ]
         assert len(kostnader_lines) == 1
 

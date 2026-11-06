@@ -48,20 +48,32 @@ from pathlib import Path
 from diary_md.exceptions import DiaryParseError
 from diary_md.models import DATE_FORMAT, SECTION_TO_CANONICAL, VALID_WEEKDAYS
 
-POLICIES = ('public', 'pseudonym', 'initial', 'anonymous', 'child')
+POLICIES = ("public", "pseudonym", "initial", "anonymous", "child")
 
-_FENCE_OPEN = re.compile(r'^\s*<!--\s*private\b(?:(?!-->).)*-->\s*$', re.IGNORECASE)
-_FENCE_CLOSE = re.compile(r'^\s*<!--\s*/private\s*-->\s*$', re.IGNORECASE)
-_FENCE_ANY = re.compile(r'<!--\s*/?private\b', re.IGNORECASE)
-_COMMENT = re.compile(r'<!--.*?-->', re.DOTALL)
+_FENCE_OPEN = re.compile(r"^\s*<!--\s*private\b(?:(?!-->).)*-->\s*$", re.IGNORECASE)
+_FENCE_CLOSE = re.compile(r"^\s*<!--\s*/private\s*-->\s*$", re.IGNORECASE)
+_FENCE_ANY = re.compile(r"<!--\s*/?private\b", re.IGNORECASE)
+_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
 _SENTENCE_START = re.compile(r'(?:^|[.!?:|\n])[\s"“«(\'*+#>~-]*$')
-_DATE_IN_HEADER = re.compile(r'\b(\d{4}-\d{2}-\d{2})\b')
+_DATE_IN_HEADER = re.compile(r"\b(\d{4}-\d{2}-\d{2})\b")
 _WORD = re.compile(r"[^\W\d_][\w'’-]*")
 _QUOTES = '"“”«»„'
 
-MONTHS_EN = ('January', 'February', 'March', 'April', 'May', 'June', 'July',
-             'August', 'September', 'October', 'November', 'December')
-ALWAYS_KNOWN = frozenset(VALID_WEEKDAYS + MONTHS_EN + ('I',))
+MONTHS_EN = (
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+)
+ALWAYS_KNOWN = frozenset(VALID_WEEKDAYS + MONTHS_EN + ("I",))
 
 
 @dataclass
@@ -74,7 +86,7 @@ class Person:
     """
 
     name: str
-    policy: str = 'pseudonym'
+    policy: str = "pseudonym"
     aliases: list[str] = field(default_factory=list)
     pseudonym: str | None = None
     anonymous: str | None = None
@@ -82,7 +94,7 @@ class Person:
     def __post_init__(self) -> None:
         if self.policy not in POLICIES:
             raise ValueError(f"{self.name}: policy {self.policy!r} is not one of {', '.join(POLICIES)}")
-        if self.policy == 'pseudonym' and not self.pseudonym:
+        if self.policy == "pseudonym" and not self.pseudonym:
             raise ValueError(f"{self.name}: policy 'pseudonym' needs a pseudonym")
 
     @property
@@ -91,24 +103,24 @@ class Person:
 
         :meth:`render` is what goes into the output.
         """
-        if self.policy == 'public':
+        if self.policy == "public":
             return None
-        if self.policy == 'pseudonym':
+        if self.policy == "pseudonym":
             return self.pseudonym
-        if self.policy == 'initial':
-            return self.name[0] + '.'
-        if self.policy == 'child':
-            return self.anonymous or 'a child'
-        return self.anonymous or 'someone'
+        if self.policy == "initial":
+            return self.name[0] + "."
+        if self.policy == "child":
+            return self.anonymous or "a child"
+        return self.anonymous or "someone"
 
-    def render(self, suffix: str = '', quoted: bool = False) -> str:
+    def render(self, suffix: str = "", quoted: bool = False) -> str:
         """The replacement with a genitive ``suffix``.
 
         A pseudonym is put in quotes to show it is one, unless the name already
         stands in ``quoted`` text.
         """
         text = self.replacement + suffix
-        return f'"{text}"' if self.policy == 'pseudonym' and not quoted else text
+        return f'"{text}"' if self.policy == "pseudonym" and not quoted else text
 
 
 @dataclass
@@ -123,7 +135,7 @@ class PublicPolicy:
     public_from: datetime | None = None
 
     @classmethod
-    def load(cls, path: Path) -> 'PublicPolicy':
+    def load(cls, path: Path) -> "PublicPolicy":
         """Load a policy from a JSON file with the same keys as the fields.
 
         ``reviewed_up_to`` and ``public_from`` are YYYY-MM-DD strings, ``people`` a list of
@@ -132,20 +144,20 @@ class PublicPolicy:
         Any problem with the file is raised as ValueError naming the file.
         """
         try:
-            with open(path, encoding='utf-8') as f:
+            with open(path, encoding="utf-8") as f:
                 data = json.load(f)
-            reviewed = data.get('reviewed_up_to')
-            public_from = data.get('public_from')
+            reviewed = data.get("reviewed_up_to")
+            public_from = data.get("public_from")
             return cls(
-                people=[Person(**p) for p in data.get('people', [])],
-                public_sections=data.get('public_sections', []),
-                private_sections=data.get('private_sections', []),
-                allow_words=data.get('allow_words', []),
+                people=[Person(**p) for p in data.get("people", [])],
+                public_sections=data.get("public_sections", []),
+                private_sections=data.get("private_sections", []),
+                allow_words=data.get("allow_words", []),
                 reviewed_up_to=datetime.strptime(reviewed, DATE_FORMAT) if reviewed else None,
                 public_from=datetime.strptime(public_from, DATE_FORMAT) if public_from else None,
             )
         except (ValueError, TypeError, AttributeError) as e:
-            raise ValueError(f'{path}: {e}') from e
+            raise ValueError(f"{path}: {e}") from e
 
 
 @dataclass
@@ -160,15 +172,15 @@ class RedactionReport:
     def format(self) -> str:
         lines = []
         if self.unclassified_sections:
-            lines.append('Sections neither public nor private (left out until classified):')
-            lines += [f'  {name} ({n})' for name, n in self.unclassified_sections.most_common()]
+            lines.append("Sections neither public nor private (left out until classified):")
+            lines += [f"  {name} ({n})" for name, n in self.unclassified_sections.most_common()]
         if self.child_mentions:
-            lines.append('Days mentioning a child (check them for other identifying detail):')
-            lines += [f'  {d}' for d in self.child_mentions]
+            lines.append("Days mentioning a child (check them for other identifying detail):")
+            lines += [f"  {d}" for d in self.child_mentions]
         if self.unknown_tokens:
-            lines.append('Unknown capitalised words (a name missing from the registry?):')
-            lines += [f'  {w} ({n})' for w, n in sorted(self.unknown_tokens.items())]
-        return '\n'.join(lines)
+            lines.append("Unknown capitalised words (a name missing from the registry?):")
+            lines += [f"  {w} ({n})" for w, n in sorted(self.unknown_tokens.items())]
+        return "\n".join(lines)
 
 
 def strip_private_fences(text: str) -> str:
@@ -182,28 +194,28 @@ def strip_private_fences(text: str) -> str:
     for lineno, line in enumerate(text.splitlines(keepends=True), start=1):
         if _FENCE_OPEN.match(line):
             if opened_at is not None:
-                raise DiaryParseError(f'line {lineno}: private fence opened again, still open since line {opened_at}')
+                raise DiaryParseError(f"line {lineno}: private fence opened again, still open since line {opened_at}")
             opened_at = lineno
         elif _FENCE_CLOSE.match(line):
             if opened_at is None:
-                raise DiaryParseError(f'line {lineno}: private fence closed but never opened')
+                raise DiaryParseError(f"line {lineno}: private fence closed but never opened")
             opened_at = None
         elif _FENCE_ANY.search(line):
-            raise DiaryParseError(f'line {lineno}: a private marker must be a line of its own')
+            raise DiaryParseError(f"line {lineno}: a private marker must be a line of its own")
         elif opened_at is None:
             out.append(line)
     if opened_at is not None:
-        raise DiaryParseError(f'line {opened_at}: private fence never closed')
-    return ''.join(out)
+        raise DiaryParseError(f"line {opened_at}: private fence never closed")
+    return "".join(out)
 
 
 def public_text(text: str) -> str:
     """Raw markdown with private fences and every other HTML comment removed."""
-    return _COMMENT.sub('', strip_private_fences(text))
+    return _COMMENT.sub("", strip_private_fences(text))
 
 
 def _nfc(text: str) -> str:
-    return unicodedata.normalize('NFC', text)
+    return unicodedata.normalize("NFC", text)
 
 
 def _name_pattern(people: list[Person]) -> tuple[re.Pattern | None, dict[str, Person]]:
@@ -215,7 +227,7 @@ def _name_pattern(people: list[Person]) -> tuple[re.Pattern | None, dict[str, Pe
             forms[_nfc(form)] = person
     if not forms:
         return None, forms
-    alternation = '|'.join(re.escape(f) for f in sorted(forms, key=len, reverse=True))
+    alternation = "|".join(re.escape(f) for f in sorted(forms, key=len, reverse=True))
     return re.compile(rf"(?<!\w)({alternation})(['’]s|s)?(?!\w)"), forms
 
 
@@ -224,10 +236,11 @@ def redact_names(text: str, people: list[Person]) -> str:
     pattern, forms = _name_pattern(people)
     if pattern is None:
         return text
+
     def replace(m: re.Match) -> str:
-        before, after = m.string[m.start() - 1:m.start()], m.string[m.end():m.end() + 1]
+        before, after = m.string[m.start() - 1 : m.start()], m.string[m.end() : m.end() + 1]
         quoted = bool(before) and before in _QUOTES and bool(after) and after in _QUOTES
-        return forms[m.group(1)].render(m.group(2) or '', quoted)
+        return forms[m.group(1)].render(m.group(2) or "", quoted)
 
     return pattern.sub(replace, _nfc(text))
 
@@ -236,7 +249,7 @@ def _walk_strings(node, fn):
     """Apply ``fn`` to every string in a parsed tree, keys included, except file names."""
     if isinstance(node, dict):
         return {
-            (k if k.startswith('__') else fn(k)): (v if k == '__file_name__' else _walk_strings(v, fn))
+            (k if k.startswith("__") else fn(k)): (v if k == "__file_name__" else _walk_strings(v, fn))
             for k, v in node.items()
         }
     if isinstance(node, list):
@@ -251,7 +264,7 @@ def _redact_day(day: dict, policy: PublicPolicy, report: RedactionReport) -> dic
     private = {SECTION_TO_CANONICAL.get(s, s) for s in policy.private_sections}
     out = {}
     for key, value in day.items():
-        if key.startswith('__'):
+        if key.startswith("__"):
             out[key] = value
             continue
         report.sections[key] += 1
@@ -271,27 +284,27 @@ def _day_date(header: str) -> datetime | None:
     try:
         return datetime.strptime(match.group(1), DATE_FORMAT)
     except ValueError:
-        raise DiaryParseError(f'invalid date in header: {header}') from None
+        raise DiaryParseError(f"invalid date in header: {header}") from None
 
 
 def _redact_days(tree: dict, policy: PublicPolicy, report: RedactionReport, chapter: str | None) -> dict:
     """Keep the published days of one level; any other header there is an error."""
     out = {}
     for header, value in tree.items():
-        if header.startswith('__') or not isinstance(value, dict):
+        if header.startswith("__") or not isinstance(value, dict):
             out[header] = value
             continue
         date = _day_date(header)
         if date is None:
-            where = f' (in chapter {chapter})' if chapter else ''
-            raise DiaryParseError(f'header without a date{where}: {header}')
+            where = f" (in chapter {chapter})" if chapter else ""
+            raise DiaryParseError(f"header without a date{where}: {header}")
         if date <= policy.reviewed_up_to and not (policy.public_from and date < policy.public_from):
             out[header] = _redact_day(value, policy, report)
     return out
 
 
 def _is_chapter(value: dict) -> bool:
-    days = [k for k, v in value.items() if not k.startswith('__') and isinstance(v, dict)]
+    days = [k for k, v in value.items() if not k.startswith("__") and isinstance(v, dict)]
     return bool(days) and all(_DATE_IN_HEADER.search(k) for k in days)
 
 
@@ -303,36 +316,38 @@ def _redact_level(tree: dict, policy: PublicPolicy, report: RedactionReport) -> 
     """
     out = {}
     for header, value in tree.items():
-        if header.startswith('__') or not isinstance(value, dict) or _day_date(header) is not None:
+        if header.startswith("__") or not isinstance(value, dict) or _day_date(header) is not None:
             out.update(_redact_days({header: value}, policy, report, None))
         elif _is_chapter(value):
             days = _redact_days(value, policy, report, header)
-            if not any(not k.startswith('__') for k in days):
+            if not any(not k.startswith("__") for k in days):
                 continue
-            dates = [_day_date(k) for k, v in value.items() if not k.startswith('__') and isinstance(v, dict)]
-            left_out = [side for side, cut in (
-                ('before', policy.public_from and min(dates) < policy.public_from),
-                ('after', max(dates) > policy.reviewed_up_to),
-            ) if cut]
+            dates = [_day_date(k) for k, v in value.items() if not k.startswith("__") and isinstance(v, dict)]
+            left_out = [
+                side
+                for side, cut in (
+                    ("before", policy.public_from and min(dates) < policy.public_from),
+                    ("after", max(dates) > policy.reviewed_up_to),
+                )
+                if cut
+            ]
             if left_out:
-                days['__left_out__'] = left_out
+                days["__left_out__"] = left_out
             out[header] = days
         else:
             _redact_days(value, policy, report, header)  # raises on the first undated child
-            raise DiaryParseError(f'header without a date, and no dated days under it: {header}')
+            raise DiaryParseError(f"header without a date, and no dated days under it: {header}")
     return out
 
 
 def _child_days(tree: dict, pattern: re.Pattern, date: str | None = None) -> list[str]:
     found: list[str] = []
     for key, value in tree.items():
-        if key.startswith('__'):
+        if key.startswith("__"):
             continue
         match = _DATE_IN_HEADER.search(key)
         day = match.group(1) if match else date
-        if pattern.search(key) or (
-            isinstance(value, dict) and pattern.search(value.get('__content__', ''))
-        ):
+        if pattern.search(key) or (isinstance(value, dict) and pattern.search(value.get("__content__", ""))):
             if day and day not in found:
                 found.append(day)
         if isinstance(value, dict):
@@ -343,9 +358,9 @@ def _child_days(tree: dict, pattern: re.Pattern, date: str | None = None) -> lis
 def _contents(tree: dict):
     """The ``__content__`` texts of a parsed tree; headers are not included."""
     for key, value in tree.items():
-        if key == '__content__':
+        if key == "__content__":
             yield value
-        elif not key.startswith('__') and isinstance(value, dict):
+        elif not key.startswith("__") and isinstance(value, dict):
             yield from _contents(value)
 
 
@@ -361,7 +376,7 @@ def _capitalised_runs(text: str):
     for match in _WORD.finditer(text):
         word = match.group(0)
         capitalised = word[0].isupper() and not word.isupper() and not re.match(r"I['’]", word)
-        if capitalised and run and text[end:match.start()] == ' ':
+        if capitalised and run and text[end : match.start()] == " ":
             run.append(word)
         else:
             if run:
@@ -373,7 +388,10 @@ def _capitalised_runs(text: str):
 
 
 def unknown_tokens(
-    tree: dict, known: set[str], phrases: list[str] = (), lower_case: set[str] = frozenset(),
+    tree: dict,
+    known: set[str],
+    phrases: list[str] = (),
+    lower_case: set[str] = frozenset(),
     names: set[str] = frozenset(),
 ) -> Counter:
     """Count capitalised words and names in ``tree`` that nobody vouched for.
@@ -390,13 +408,15 @@ def unknown_tokens(
     case (``lower_case``) is not part of a name ("Then Ola came").
     """
     phrase_re = (
-        re.compile('|'.join(rf'(?<!\w){re.escape(p)}(?!\w)' for p in sorted(phrases, key=len, reverse=True)),
-                   re.IGNORECASE)
-        if phrases else None
+        re.compile(
+            "|".join(rf"(?<!\w){re.escape(p)}(?!\w)" for p in sorted(phrases, key=len, reverse=True)), re.IGNORECASE
+        )
+        if phrases
+        else None
     )
 
     def stem(word: str) -> str:
-        return re.sub(r"(['’]s|['’])$", '', word)
+        return re.sub(r"(['’]s|['’])$", "", word)
 
     def is_in(word: str, words: set[str]) -> bool:
         return word.lower() in words or stem(word).lower() in words
@@ -406,7 +426,7 @@ def unknown_tokens(
         text = _nfc(text)
         if phrase_re:
             # a placeholder that neither starts a sentence nor joins a name
-            text = phrase_re.sub('_', text)
+            text = phrase_re.sub("_", text)
         for start, run in _capitalised_runs(text):
             at_sentence_start = bool(_SENTENCE_START.search(text, 0, start))
             if at_sentence_start and len(run) > 1 and run[0].lower() in lower_case:
@@ -417,7 +437,7 @@ def unknown_tokens(
                 run = run[:-1]
             if all(is_in(w, names) for w in run) or (len(run) == 1 and at_sentence_start):
                 continue
-            found[stem(' '.join(run))] += 1
+            found[stem(" ".join(run))] += 1
     return found
 
 
@@ -433,13 +453,13 @@ def redact_diary(
     a valid date raises :class:`DiaryParseError`.
     """
     if policy.reviewed_up_to is None:
-        raise ValueError('the policy has no reviewed_up_to date; nothing can be published before review')
+        raise ValueError("the policy has no reviewed_up_to date; nothing can be published before review")
     if policy.public_from and policy.public_from > policy.reviewed_up_to:
-        raise ValueError('public_from is after reviewed_up_to; nothing would be published')
+        raise ValueError("public_from is after reviewed_up_to; nothing would be published")
     report = RedactionReport()
     filtered = _redact_level(copy.deepcopy(md_dict), policy, report)
 
-    children = [p for p in policy.people if p.policy == 'child']
+    children = [p for p in policy.people if p.policy == "child"]
     if children:
         child_pattern, _ = _name_pattern(children)
         report.child_mentions = _child_days(filtered, child_pattern)
