@@ -164,10 +164,12 @@ published repository:
   removed (case does not matter, and `<!-- private: why -->` is fine); an
   unbalanced fence, or a private marker that is not a line of its own, is an
   error.  Every other HTML comment is removed too.
-* Names are replaced by policy: `public` as written, `pseudonym`, `initial`
-  ("H."), `anonymous` ("someone", or the `anonymous` text), `child` (like
-  anonymous, and the days mentioning them are listed for review).  Genitive
-  `-s`, `-'s` and `-’s` forms are handled; list other spellings as `aliases`.
+* Names are replaced by policy: `public` as written, `pseudonym` (in quotes,
+  `"Anna"`, so a reader knows it is not the real name; not when the name is
+  already in quotes), `initial` ("H."), `anonymous` ("someone", or the
+  `anonymous` text), `child` (like anonymous, and the days mentioning them
+  are listed for review).  Genitive `-s`, `-'s` and `-’s` forms are handled,
+  inside the quotes (`"Anna's"`); list other spellings as `aliases`.
   Names are matched as written, with a capital first letter.
 * Every capitalised word left in the output is checked: registered names,
   pseudonyms, `allow_words`, place names from `--places` (multi-word entries

@@ -55,6 +55,7 @@ _COMMENT = re.compile(r'<!--.*?-->', re.DOTALL)
 _SENTENCE_START = re.compile(r'(?:^|[.!?:|\n])[\s"“«(\'*+#>-]*$')
 _DATE_IN_HEADER = re.compile(r'\b(\d{4}-\d{2}-\d{2})\b')
 _WORD = re.compile(r"[^\W\d_][\w'’-]*")
+_QUOTES = '"“”«»„'
 
 MONTHS_EN = ('January', 'February', 'March', 'April', 'May', 'June', 'July',
              'August', 'September', 'October', 'November', 'December')
@@ -84,7 +85,10 @@ class Person:
 
     @property
     def replacement(self) -> str | None:
-        """The text standing in for the name, or None if it is printed as written."""
+        """The unquoted text standing in for the name, or None if it is printed as written.
+
+        :meth:`render` is what goes into the output.
+        """
         if self.policy == 'public':
             return None
         if self.policy == 'pseudonym':
@@ -94,6 +98,15 @@ class Person:
         if self.policy == 'child':
             return self.anonymous or 'a child'
         return self.anonymous or 'someone'
+
+    def render(self, suffix: str = '', quoted: bool = False) -> str:
+        """The replacement with a genitive ``suffix``.
+
+        A pseudonym is put in quotes to show it is one, unless the name already
+        stands in ``quoted`` text.
+        """
+        text = self.replacement + suffix
+        return f'"{text}"' if self.policy == 'pseudonym' and not quoted else text
 
 
 @dataclass
@@ -208,7 +221,12 @@ def redact_names(text: str, people: list[Person]) -> str:
     pattern, forms = _name_pattern(people)
     if pattern is None:
         return text
-    return pattern.sub(lambda m: forms[m.group(1)].replacement + (m.group(2) or ''), _nfc(text))
+    def replace(m: re.Match) -> str:
+        before, after = m.string[m.start() - 1:m.start()], m.string[m.end():m.end() + 1]
+        quoted = bool(before) and before in _QUOTES and bool(after) and after in _QUOTES
+        return forms[m.group(1)].render(m.group(2) or '', quoted)
+
+    return pattern.sub(replace, _nfc(text))
 
 
 def _walk_strings(node, fn):

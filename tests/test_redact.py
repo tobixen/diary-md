@@ -110,7 +110,15 @@ class TestPublicText:
 
 class TestRedactNames:
     def test_pseudonym_with_genitive(self, policy):
-        assert redact_names("Ingrid's bag and Ingrids hat", policy.people) == "Astrid's bag and Astrids hat"
+        assert redact_names("Ingrid's bag and Ingrids hat", policy.people) == '"Astrid\'s" bag and "Astrids" hat'
+
+    @pytest.mark.parametrize(('text', 'expected'), [
+        ('"Ingrid" said', '"Astrid" said'),
+        ('“Ingrid”', '“Astrid”'),
+        ('<a title="Ingrid">x</a>', '<a title="Astrid">x</a>'),
+    ])
+    def test_pseudonym_already_quoted(self, policy, text, expected):
+        assert redact_names(text, policy.people) == expected
 
     def test_initial(self, policy):
         assert redact_names("Bjarne slept", policy.people) == "B. slept"
@@ -192,7 +200,7 @@ class TestRedactDiary:
         policy.public_from = datetime(2026, 9, 1)
         out, _ = redact_diary(parse(text), policy)
         assert [k for k in out if not k.startswith('__')] == ['Fake Autumn']
-        assert out['Fake Autumn']['__content__'] == 'Astrid left.'
+        assert out['Fake Autumn']['__content__'] == '"Astrid" left.'
         assert 'Monday 2026-09-07' in out['Fake Autumn']
 
     def test_public_from_after_review_date_rejected(self, policy):
@@ -211,7 +219,7 @@ class TestRedactDiary:
         assert 'Ingrid' not in dumped
         assert 'Bjarne' not in dumped
         assert not re.search(r'\bOla', dumped)
-        assert 'Astrid' in dumped
+        assert '\\"Astrid\\"' in dumped
         assert 'Petra' in dumped
 
     def test_child_mentions_reported(self, policy):
@@ -238,7 +246,7 @@ class TestRedactDiary:
 
     def test_nfc_normalised(self):
         people = [Person(name='José', policy='pseudonym', pseudonym='Pedro')]
-        assert redact_names(unicodedata.normalize('NFD', 'José came'), people) == 'Pedro came'
+        assert redact_names(unicodedata.normalize('NFD', 'José came'), people) == '"Pedro" came'
 
     def test_capitalised_mid_sentence_is_reported_despite_lower_case_use(self, policy):
         text = ("## Monday 2026-06-01\n\n"
@@ -315,7 +323,7 @@ class TestVerbatimContent:
         text = ("## Monday 2026-06-01\n\n### Maintenance\n\n"
                 "<div>Ingrid and Zyxwort</div>\n")
         out, report = redact_diary(parse(text), policy)
-        assert out['Monday 2026-06-01']['Maintenance']['__content__'] == '<div>Astrid and Zyxwort</div>'
+        assert out['Monday 2026-06-01']['Maintenance']['__content__'] == '<div>"Astrid" and Zyxwort</div>'
         assert 'Zyxwort' in report.unknown_tokens
 
     @pytest.mark.parametrize('line', ['+ Quay was wet.', '| Quay | wet |'])
