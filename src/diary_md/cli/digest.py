@@ -12,7 +12,7 @@ import click
 
 from diary_md.exceptions import DiaryParseError
 from diary_md.exchange import get_exchange_rate
-from diary_md.models import find_section
+from diary_md.models import SECTION_TO_CANONICAL, find_section
 from diary_md.parser import markdown_to_dict, parse_diary_to_list
 from diary_md.redact import PublicPolicy, RedactionReport, public_text, redact_diary
 
@@ -288,22 +288,49 @@ def export_web_json(ctx, pretty, policy, places, allow_unknown):
         click.echo(json.dumps(output, ensure_ascii=False))
 
 
+def allowable_subsections(ctx, config: Path | None) -> list[str]:
+    """The config's ``allowable_subsections`` for the (first) diary, or the top-level list."""
+    cfg = load_config(config)
+    diary_paths = ctx.obj.get('diary_paths', [])
+    if diary_paths:
+        cfg = get_config_for_diary(cfg, diary_paths[0])
+    return cfg.get('allowable_subsections', [])
+
+
 @digest.command()
 @click.pass_context
 @click.option('--policy', required=True, type=click.Path(exists=True, dir_okay=False, path_type=Path),
               help=POLICY_HELP)
 @click.option('--places', type=click.Path(exists=True, dir_okay=False, path_type=Path), help=PLACES_HELP)
-def check_public(ctx, policy, places):
+@click.option('--config', type=click.Path(exists=True, path_type=Path),
+              help=f'Config file with allowable_subsections (default: {DEFAULT_CONFIG_FILE})')
+def check_public(ctx, policy, places, config):
     """Report what the public export would leave for a human to classify.
 
-    Exits 1 if there are unknown capitalised words — usable as a pre-commit
-    hook.  Unclassified sections and days mentioning children are reported
-    but do not fail: the former are left out anyway, the latter are a reminder.
+    Exits 1 if there are unknown capitalised words, or sections of published
+    days that the config's allowable_subsections does not list (a typo, or a
+    list to update; the policy's public and private sections count as
+    listed) — usable as a pre-commit hook.  Unclassified sections and days
+    mentioning children are reported but do not fail: the former are left
+    out anyway, the latter are a reminder.
     """
     _, report = public_diary(ctx, policy, places)
     if report.format():
         click.echo(report.format())
-    if report.unknown_tokens:
+    allowable = allowable_subsections(ctx, config)
+    stray = []
+    if allowable:
+        loaded = PublicPolicy.load(policy)
+        listed = {SECTION_TO_CANONICAL.get(s, s)
+                  for s in [*allowable, *loaded.public_sections, *loaded.private_sections]}
+        stray = [(s, n) for s, n in report.sections.most_common() if SECTION_TO_CANONICAL.get(s, s) not in listed]
+    if not allowable:
+        click.echo('Note: no allowable_subsections in the config; section names were not checked')
+    if stray:
+        click.echo('Sections not in allowable_subsections (a typo, or the list needs updating):')
+        for name, n in stray:
+            click.echo(f'  {name} ({n})')
+    if report.unknown_tokens or stray:
         ctx.exit(1)
 
 @digest.command()
@@ -319,19 +346,7 @@ def find_all_subsections(ctx, config):
     Supports diary-specific configs with glob patterns in diary_configs section.
     """
     md_dict = ctx.obj['md_dict']
-    diary_paths = ctx.obj.get('diary_paths', [])
-
-    # Load config and get diary-specific settings
-    cfg = load_config(config)
-
-    # If we have diary paths, try to get diary-specific config
-    allowable_from_config = []
-    if diary_paths:
-        # Use first diary's config (could be enhanced to merge configs)
-        diary_cfg = get_config_for_diary(cfg, diary_paths[0])
-        allowable_from_config = diary_cfg.get('allowable_subsections', [])
-    else:
-        allowable_from_config = cfg.get('allowable_subsections', [])
+    allowable_from_config = allowable_subsections(ctx, config)
 
     # Always allow internal keys
     allowable_subsection_titles = {'__content__', '__file_position__', '__file_name__'}

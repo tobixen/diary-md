@@ -20,13 +20,14 @@ every exporter publishes the same thing:
 * a day header without a valid date is an error, not a guess;
 * names from the people registry are replaced according to each person's
   policy (:func:`redact_names`);
-* every capitalised word left in the output that is not known — a registered
-  name, a pseudonym, an allowed word or phrase, a weekday — is reported
-  (:attr:`RedactionReport.unknown_tokens`).  At the start of a sentence, a
-  word the diary also uses in lower case is excused; mid-sentence, a capital
-  letter means a name.  That is the fail-closed part of the name handling: a
-  name not yet in the registry shows up there.  Names are matched as written,
-  capitalised; a misspelt one is for the review to catch.
+* every capitalised word left in the body text that is not known — a
+  registered name, a pseudonym, an allowed word or phrase, a weekday — is
+  reported (:attr:`RedactionReport.unknown_tokens`), neighbouring ones as one
+  name, a registered name included.  The check reads the text before names
+  are replaced.  Headers of any level are not checked (names in them are
+  still replaced), and a single word starting a sentence is excused; mid-sentence, a capital letter means a name.  So a name not yet in
+  the registry usually shows up there, but not always.  Names are matched as
+  written, capitalised; a misspelt one is for the review to catch.
 
 The pass is used by ``diary-digest export-web-json --public`` and
 ``check-public``; the other exporters do not redact.
@@ -53,7 +54,7 @@ _FENCE_OPEN = re.compile(r'^\s*<!--\s*private\b(?:(?!-->).)*-->\s*$', re.IGNOREC
 _FENCE_CLOSE = re.compile(r'^\s*<!--\s*/private\s*-->\s*$', re.IGNORECASE)
 _FENCE_ANY = re.compile(r'<!--\s*/?private\b', re.IGNORECASE)
 _COMMENT = re.compile(r'<!--.*?-->', re.DOTALL)
-_SENTENCE_START = re.compile(r'(?:^|[.!?:|\n])[\s"“«(\'*+#>-]*$')
+_SENTENCE_START = re.compile(r'(?:^|[.!?:|\n])[\s"“«(\'*+#>~-]*$')
 _DATE_IN_HEADER = re.compile(r'\b(\d{4}-\d{2}-\d{2})\b')
 _WORD = re.compile(r"[^\W\d_][\w'’-]*")
 _QUOTES = '"“”«»„'
@@ -152,6 +153,7 @@ class RedactionReport:
     """What the redaction pass wants a human to look at."""
 
     unclassified_sections: Counter = field(default_factory=Counter)
+    sections: Counter = field(default_factory=Counter)
     unknown_tokens: Counter = field(default_factory=Counter)
     child_mentions: list[str] = field(default_factory=list)
 
@@ -252,6 +254,7 @@ def _redact_day(day: dict, policy: PublicPolicy, report: RedactionReport) -> dic
         if key.startswith('__'):
             out[key] = value
             continue
+        report.sections[key] += 1
         canonical = SECTION_TO_CANONICAL.get(key, key)
         if canonical in public:
             out[key] = value
@@ -337,50 +340,84 @@ def _child_days(tree: dict, pattern: re.Pattern, date: str | None = None) -> lis
     return found
 
 
-def _texts(tree: dict):
-    """Headers and ``__content__`` of a parsed tree: the text an exporter prints."""
+def _contents(tree: dict):
+    """The ``__content__`` texts of a parsed tree; headers are not included."""
     for key, value in tree.items():
         if key == '__content__':
             yield value
-        elif not key.startswith('__'):
-            yield key
-            if isinstance(value, dict):
-                yield from _texts(value)
+        elif not key.startswith('__') and isinstance(value, dict):
+            yield from _contents(value)
 
 
 def lower_case_words(tree: dict) -> set[str]:
     """Every word a diary uses in lower case somewhere — evidence that it is not a name."""
-    return {w for text in _texts(tree) for w in _WORD.findall(text) if w.islower()}
+    return {w for text in _contents(tree) for w in _WORD.findall(text) if w.islower()}
+
+
+def _capitalised_runs(text: str):
+    """Runs of capitalised words separated by single spaces, as (start, words)."""
+    run: list[str] = []
+    start = end = 0
+    for match in _WORD.finditer(text):
+        word = match.group(0)
+        capitalised = word[0].isupper() and not word.isupper() and not re.match(r"I['’]", word)
+        if capitalised and run and text[end:match.start()] == ' ':
+            run.append(word)
+        else:
+            if run:
+                yield start, run
+            run, start = ([word], match.start()) if capitalised else ([], 0)
+        end = match.end()
+    if run:
+        yield start, run
 
 
 def unknown_tokens(
-    tree: dict, known: set[str], lower_case: set[str], phrases: list[str] = ()
+    tree: dict, known: set[str], phrases: list[str] = (), lower_case: set[str] = frozenset(),
+    names: set[str] = frozenset(),
 ) -> Counter:
-    """Count capitalised words in ``tree`` that nobody vouched for.
+    """Count capitalised words and names in ``tree`` that nobody vouched for.
 
-    ``known`` is compared case-insensitively; ``phrases`` (multi-word allowed
-    names) are blanked out before words are looked at.  A word also used in
-    lower case (``lower_case``) is excused at the start of a sentence only.
+    ``tree`` is the text before names are replaced.  Only body text is looked
+    at: headers hold places, and section names are checked against a list of
+    their own.  ``known`` and the registered ``names`` are compared
+    case-insensitively; ``phrases`` (multi-word known names) are blanked out
+    first.  Neighbouring capitalised words are one name ("Golden Sands"),
+    reported whole once known words are trimmed off its ends; a registered
+    name is not trimmed, as "Ingrid Zyxsen" may be another Ingrid.  A single
+    word at the start of a sentence is excused, so an unregistered name there
+    gets through.  A sentence's first word that the diary also uses in lower
+    case (``lower_case``) is not part of a name ("Then Ola came").
     """
     phrase_re = (
         re.compile('|'.join(rf'(?<!\w){re.escape(p)}(?!\w)' for p in sorted(phrases, key=len, reverse=True)),
                    re.IGNORECASE)
         if phrases else None
     )
+
+    def stem(word: str) -> str:
+        return re.sub(r"(['’]s|['’])$", '', word)
+
+    def is_in(word: str, words: set[str]) -> bool:
+        return word.lower() in words or stem(word).lower() in words
+
     found: Counter = Counter()
-    for text in _texts(tree):
+    for text in _contents(tree):
+        text = _nfc(text)
         if phrase_re:
-            text = phrase_re.sub(' ', text)
-        for match in _WORD.finditer(text):
-            word = match.group(0)
-            if not word[0].isupper() or word.isupper() or re.match(r"I['’]", word):
+            # a placeholder that neither starts a sentence nor joins a name
+            text = phrase_re.sub('_', text)
+        for start, run in _capitalised_runs(text):
+            at_sentence_start = bool(_SENTENCE_START.search(text, 0, start))
+            if at_sentence_start and len(run) > 1 and run[0].lower() in lower_case:
+                run, at_sentence_start = run[1:], False
+            while run and is_in(run[0], known):
+                run, at_sentence_start = run[1:], False
+            while run and is_in(run[-1], known):
+                run = run[:-1]
+            if all(is_in(w, names) for w in run) or (len(run) == 1 and at_sentence_start):
                 continue
-            stem = re.sub(r"(['’]s|['’])$", '', word)
-            if stem.lower() in known or word.lower() in known:
-                continue
-            if stem.lower() in lower_case and _SENTENCE_START.search(text, 0, match.start()):
-                continue
-            found[stem] += 1
+            found[stem(' '.join(run))] += 1
     return found
 
 
@@ -410,12 +447,9 @@ def redact_diary(
     public = _walk_strings(filtered, lambda s: redact_names(s, policy.people))
 
     known = set(ALWAYS_KNOWN) | set(policy.allow_words) | set(known_words or ())
-    for person in policy.people:
-        if person.replacement is None:
-            known |= {person.name, *person.aliases}
-        elif person.policy == 'pseudonym':
-            known.add(person.pseudonym)
-    phrases = [w for w in known if len(_WORD.findall(w)) > 1]
+    names = {_nfc(n) for person in policy.people for n in (person.name, *person.aliases)}
+    phrases = [w for w in known | names if len(_WORD.findall(w)) > 1]
     known = {w.lower() for w in known if len(_WORD.findall(w)) == 1}
-    report.unknown_tokens = unknown_tokens(public, known, lower_case_words(md_dict), phrases)
+    names = {w.lower() for w in names if len(_WORD.findall(w)) == 1}
+    report.unknown_tokens = unknown_tokens(filtered, known, phrases, lower_case_words(md_dict), names)
     return public, report

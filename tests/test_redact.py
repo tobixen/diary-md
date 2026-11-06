@@ -255,7 +255,7 @@ class TestRedactDiary:
         text = ("## Monday 2026-06-01\n\n"
                 "Then we paid 5 EUR per day, and then Per came by.  Per left early.\n")
         _, report = redact_diary(parse(text), policy)
-        # 'Per' at a sentence start is excused by 'per' in lower case, mid-sentence it is not
+        # 'Per' at a sentence start is excused, mid-sentence it is not
         assert report.unknown_tokens == {'Per': 1}
 
     def test_multi_word_allow_words_are_phrases(self, policy):
@@ -269,9 +269,55 @@ class TestRedactDiary:
                 "Ingrid met Zyxwort at the quay.  The quay was wet, so we left.  "
                 "We bought EUR at the Seabank.\n")
         _, report = redact_diary(parse(text), policy, known_words={'Seabank', 'Harbourtown'})
-        # Zyxwort is unknown; "The" and "We" are fine, as they are used in lower case too;
+        # Zyxwort is unknown; "The" and "We" start sentences;
         # Astrid is a pseudonym, hence known; EUR is an acronym
         assert set(report.unknown_tokens) == {'Zyxwort'}
+
+    def test_sentence_start_excused_even_if_never_lower_case(self, policy):
+        text = "## Monday 2026-06-01\n\nZyxwort joined.  Rainy day!\n\n* Qwerty came\n"
+        _, report = redact_diary(parse(text), policy)
+        assert not report.unknown_tokens
+
+    def test_known_phrase_at_sentence_start_does_not_excuse_next_word(self, policy):
+        policy.allow_words = ['Golden Sands']
+        text = "## Monday 2026-06-01\n\nGolden Sands Qwerty was crowded.\n"
+        _, report = redact_diary(parse(text), policy)
+        assert set(report.unknown_tokens) == {'Qwerty'}
+
+    def test_chapter_intro_is_checked(self, policy):
+        text = "# Trip\n\nwith Zyxwort.\n\n## Monday 2026-06-01\n\nok.\n"
+        _, report = redact_diary(parse(text), policy)
+        assert set(report.unknown_tokens) == {'Zyxwort'}
+
+    def test_deeper_headers_redacted_not_checked(self, policy):
+        text = "## Monday 2026-06-01\n\n### Maintenance\n\nx\n\n#### Visit from Qwertyman and Ingrid\n\ny\n"
+        out, report = redact_diary(parse(text), policy)
+        assert not report.unknown_tokens
+        assert 'Visit from Qwertyman and "Astrid"' in out['Monday 2026-06-01']['Maintenance']
+
+    def test_headers_not_checked(self, policy):
+        text = "# Trip to Zyxland\n\n## Monday 2026-06-01 - Qwertyport\n\nok.\n"
+        _, report = redact_diary(parse(text), policy)
+        assert not report.unknown_tokens
+
+    def test_registered_name_in_header_still_redacted(self, policy):
+        text = "## Monday 2026-06-01 - Ingrid's place\n\nok.\n"
+        out, _ = redact_diary(parse(text), policy)
+        assert list(out) == ['Monday 2026-06-01 - "Astrid\'s" place']
+
+    @pytest.mark.parametrize(('text', 'expected'), [
+        ('We hiked in the Golden Sands forest with Kim André.', {'Golden Sands', 'Kim André'}),
+        ('Golden Sands was crowded.', {'Golden Sands'}),
+        ('so on Monday Zyxwort came.', {'Zyxwort'}),
+        ('then the boat.  Then Zyxwort came.', {'Zyxwort'}),
+        ('we met King Haakon and Ingrid Zyx there.', {'King Haakon', 'Ingrid Zyx'}),
+        ('we met Bjarne Zyxsen at the quay.', {'Bjarne Zyxsen'}),
+        ('Ingrid Zyxsen arrived.', {'Ingrid Zyxsen'}),
+        ('so Ingrid and Bjarne Petra came.', set()),
+    ])
+    def test_multi_word_names_reported_whole(self, policy, text, expected):
+        _, report = redact_diary(parse(f"## Monday 2026-06-01\n\n{text}\n"), policy)
+        assert set(report.unknown_tokens) == expected
 
     def test_contractions_of_i_known(self, policy):
         text = "## Monday 2026-06-01\n\nI've been, I'll go, I’d stay.\n"
@@ -329,7 +375,7 @@ class TestVerbatimContent:
         assert out['Monday 2026-06-01']['Maintenance']['__content__'] == '<div>"Astrid" and Zyxwort</div>'
         assert 'Zyxwort' in report.unknown_tokens
 
-    @pytest.mark.parametrize('line', ['+ Quay was wet.', '| Quay | wet |'])
+    @pytest.mark.parametrize('line', ['+ Quay was wet.', '| Quay | wet |', '* ~~Quay painted~~'])
     def test_plus_bullet_and_table_cell_start_a_sentence(self, policy, line):
         text = f"## Monday 2026-06-01\n\nthe quay was dry.\n\n{line}\n"
         _, report = redact_diary(parse(text), policy)

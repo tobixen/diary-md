@@ -228,6 +228,10 @@ Nor this.
 Nobody reads this.
 """
 
+    @pytest.fixture(autouse=True)
+    def no_user_config(self, tmp_path, monkeypatch):
+        monkeypatch.setattr('diary_md.cli.digest.DEFAULT_CONFIG_FILE', tmp_path / 'no-config.json')
+
     @pytest.fixture
     def files(self, tmp_path):
         diary = tmp_path / 'diary.md'
@@ -286,6 +290,37 @@ Nobody reads this.
         trip = json.loads(result.stdout)['trips'][0]
         assert 'intro' not in trip
         assert 'leftOut' not in trip
+
+    def test_check_public_reports_sections_not_allowed(self, files, tmp_path):
+        diary, policy = files
+        diary.write_text(self.DIARY.replace('Ingrid fixed the winch with Zyxwort.', 'ok.')
+                         + '\n### Maintenence\n\nTypo.\n')
+        config = tmp_path / 'config.json'
+        config.write_text(json.dumps({'allowable_subsections': ['Maintenance']}))
+        result = CliRunner().invoke(
+            digest, ['--diary', str(diary), 'check-public', '--policy', str(policy), '--config', str(config)])
+        assert result.exit_code == 1
+        # Private is in the policy's private_sections, so it is allowed too
+        assert 'Maintenence' in result.output
+        assert 'Private (' not in result.output.split('allowable_subsections')[-1]
+        assert 'Unknown capitalised' not in result.output
+
+    def test_check_public_section_alias_counts_as_listed(self, files, tmp_path):
+        diary, policy = files
+        diary.write_text(self.DIARY.replace('Ingrid fixed the winch with Zyxwort.', 'ok.')
+                         .replace('### Maintenance', '### Vedlikehold'))
+        config = tmp_path / 'config.json'
+        config.write_text(json.dumps({'allowable_subsections': ['Maintenance']}))
+        result = CliRunner().invoke(
+            digest, ['--diary', str(diary), 'check-public', '--policy', str(policy), '--config', str(config)])
+        assert result.exit_code == 0, result.output
+
+    def test_check_public_without_allowable_list_skips_section_check(self, files):
+        diary, policy = files
+        diary.write_text(self.DIARY.replace('Ingrid fixed the winch with Zyxwort.', 'ok.'))
+        result = CliRunner().invoke(digest, ['--diary', str(diary), 'check-public', '--policy', str(policy)])
+        assert result.exit_code == 0, result.output
+        assert 'no allowable_subsections' in result.output
 
     def test_bad_policy_is_a_clean_error(self, files, tmp_path):
         diary, _ = files

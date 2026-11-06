@@ -172,12 +172,21 @@ published repository:
   are listed for review).  Genitive `-s`, `-'s` and `-’s` forms are handled,
   inside the quotes (`"Anna's"`); list other spellings as `aliases`.
   Names are matched as written, with a capital first letter.
-* Every capitalised word left in the output is checked: registered names,
+* Every capitalised word left in the body text is checked: registered names,
   pseudonyms, `allow_words`, place names from `--places` (multi-word entries
-  as whole phrases), weekdays and months are known, and so is a word at the
-  start of a sentence that the diary also uses in lower case.  Anything else
-  is reported, and blocks the export unless `--allow-unknown` is given — a name
-  missing from the registry turns up there.
+  as whole phrases), weekdays and months are known.  Neighbouring capitalised
+  words count as one name and are reported whole ("Golden Sands"), a
+  registered name included ("Ingrid Zyxsen" may be another Ingrid).
+  Headers of every level are not checked, as they hold places (registered
+  names in them are still replaced), and a single word at the start of a
+  sentence is excused.  Anything else is reported, and blocks
+  the export unless `--allow-unknown` is given — a name missing from the
+  registry turns up there, unless it only ever starts a sentence or stands in
+  a header: the check catches most names, not all.
+* `check-public` also fails on a section of a published day that the
+  `allowable_subsections` of `~/.config/diary-md/config.json` (`--config`)
+  does not list, nor the policy's public or private sections: a typo, or a
+  list to update.  Without such a list it says so, and skips this check.
 
 ### diary-update
 

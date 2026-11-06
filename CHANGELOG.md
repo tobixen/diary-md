@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   non-whitelisted sections and `<!-- private -->` fenced paragraphs, and
   replaces names from a people registry; the viewer says where a chapter
   has entries not published yet.  `diary-digest check-public` reports
-  unclassified sections and unknown capitalised words
+  unclassified sections, sections missing from `allowable_subsections`, and
+  unknown capitalised words and names in the body text
 - `export-web-json` exports a chapter's intro, and the viewer shows it
 
 ### Fixed
