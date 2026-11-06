@@ -18,3 +18,7 @@
 
 * The web viewer has no fenced-code support: `#` lines inside a code block
   render as headings.  (HTML in the diary is shown as text since 2026-11-06.)
+* The markdown-it parser never sets `__file_position__`, so the chronological
+  check compares 0 with 0: the same date in two `--diary` files is accepted
+  (v0.1.1 rejected it), and parse errors no longer name a file position.
+  Found reviewing the 0.2.0 CHANGELOG; not reproduced yet.  Write the test first.
