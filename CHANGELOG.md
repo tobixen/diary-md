@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-06
+
 ### Added
 - The web viewer is installed with the package: `diary-install-viewer DIR`
   copies it into a directory (`--page index.html` to name the page)
+
+### Changed
+- In the source repository the viewer moved from `viewer/` to
+  `src/diary_md/viewer/`; `viewer/` keeps the examples
 
 ## [0.2.0] - 2026-11-06
 
