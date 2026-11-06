@@ -40,6 +40,7 @@ dev = [
 diary-digest = "diary_md.cli.digest:main"
 diary-update = "diary_md.cli.update:main"
 diary-reconcile = "diary_md.cli.reconcile:main"
+diary-install-viewer = "diary_md.cli.viewer:main"
 
 [project.urls]
 Repository = "https://github.com/tobixen/diary-md"

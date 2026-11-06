@@ -4,25 +4,36 @@ Static HTML viewer for browsing and searching your markdown diary.
 
 ## Quick Start
 
-1. **Generate JSON from your diary:**
+1. **Install the viewer into a directory** (it comes with the package):
+   ```bash
+   diary-install-viewer ~/diary-site      # --page index.html to name the page
+   cd ~/diary-site
+   ```
+
+2. **Generate JSON from your diary:**
    ```bash
    diary-digest --diary ~/diary-2026.md export-web-json > diary.json
    ```
 
-2. **Open the viewer:**
-   - Simply open `diary-viewer.html` in your web browser
-   - Or use a local HTTP server to avoid CORS issues:
-     ```bash
-     python -m http.server 8000
-     # Then open http://localhost:8000/diary-viewer.html
-     ```
+3. **Open the viewer** through a local HTTP server (browsers do not let a page
+   opened as a file fetch `diary.json`):
+   ```bash
+   python -m http.server 8000
+   # Then open http://localhost:8000/diary-viewer.html (or the --page name)
+   ```
 
 ## Files
 
+The viewer itself lives in the package, `src/diary_md/viewer/`, and
+`diary-install-viewer` copies it out:
+
 - `diary-viewer.html` - Main viewer (standalone, no build required)
 - `md-viewer-common.js` - Common viewer library (markdown, search, collapsing)
+
+This directory holds examples to put beside it:
+
 - `aliases.json` - Place name aliases for multi-language search
-- `diary.json` - Your diary data (generated from markdown)
+- `diary.json` - Diary data (generated from markdown), from `sample-diary.md`
 
 ## Features
 
@@ -138,10 +149,10 @@ where days were left out as not yet reviewed; the viewer shows a note there.
 The viewer works completely offline:
 
 1. Generate `diary.json` from your markdown
-2. Open `diary-viewer.html` in any web browser
+2. Serve the directory locally and open `diary-viewer.html` from it
 3. No internet connection required
 
-**Note:** Some browsers block `fetch()` from `file://` URLs. If you see errors, use a local HTTP server:
+**Note:** Browsers block `fetch()` from `file://` URLs, so open it through a local HTTP server:
 
 ```bash
 # Python 3
@@ -173,7 +184,7 @@ inline copies of some of its functions.
 
 To modify the viewer:
 
-1. Edit `diary-viewer.html` or `md-viewer-common.js`
+1. Edit `src/diary_md/viewer/diary-viewer.html` or `md-viewer-common.js`
 2. Test locally (`node tests/js/viewer_escape.test.js` covers the escaping)
 3. Commit changes
 

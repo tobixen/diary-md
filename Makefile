@@ -42,6 +42,7 @@ dev: venv
 	@echo "  $(VENV)/bin/diary-digest --help"
 	@echo "  $(VENV)/bin/diary-update --help"
 	@echo "  $(VENV)/bin/diary-reconcile --help"
+	@echo "  $(VENV)/bin/diary-install-viewer --help"
 
 # Run tests
 test: venv
@@ -74,6 +75,8 @@ install-completion-user:
 		$(VENV)/bin/python -c "import click; from diary_md.cli.update import update; print(click.shell_completion.get_completion_class('bash')(update, {}, 'diary-update', '_DIARY_UPDATE_COMPLETE').source())" > "$(COMPLETION_DIR_USER)/diary-update"
 	@_DIARY_RECONCILE_COMPLETE=bash_source diary-reconcile > "$(COMPLETION_DIR_USER)/diary-reconcile" 2>/dev/null || \
 		$(VENV)/bin/python -c "import click; from diary_md.cli.reconcile import reconcile; print(click.shell_completion.get_completion_class('bash')(reconcile, {}, 'diary-reconcile', '_DIARY_RECONCILE_COMPLETE').source())" > "$(COMPLETION_DIR_USER)/diary-reconcile"
+	@_DIARY_INSTALL_VIEWER_COMPLETE=bash_source diary-install-viewer > "$(COMPLETION_DIR_USER)/diary-install-viewer" 2>/dev/null || \
+		$(VENV)/bin/python -c "import click; from diary_md.cli.viewer import main; print(click.shell_completion.get_completion_class('bash')(main, {}, 'diary-install-viewer', '_DIARY_INSTALL_VIEWER_COMPLETE').source())" > "$(COMPLETION_DIR_USER)/diary-install-viewer"
 	@echo "Completion scripts installed to $(COMPLETION_DIR_USER)/"
 	@echo "Restart your shell or run: source $(COMPLETION_DIR_USER)/diary-digest"
 
@@ -82,4 +85,5 @@ install-completion-system:
 	@_DIARY_DIGEST_COMPLETE=bash_source diary-digest > "$(COMPLETION_DIR_SYSTEM)/diary-digest"
 	@_DIARY_UPDATE_COMPLETE=bash_source diary-update > "$(COMPLETION_DIR_SYSTEM)/diary-update"
 	@_DIARY_RECONCILE_COMPLETE=bash_source diary-reconcile > "$(COMPLETION_DIR_SYSTEM)/diary-reconcile"
+	@_DIARY_INSTALL_VIEWER_COMPLETE=bash_source diary-install-viewer > "$(COMPLETION_DIR_SYSTEM)/diary-install-viewer"
 	@echo "Completion scripts installed to $(COMPLETION_DIR_SYSTEM)/"

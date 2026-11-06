@@ -1,7 +1,7 @@
 // Run by tests/test_viewer_js.py: node tests/js/viewer_links.test.js
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const { MarkdownViewerBase, CollapsibleManager } = require(path.join(__dirname, '..', '..', 'viewer', 'md-viewer-common.js'));
+const { MarkdownViewerBase, CollapsibleManager } = require(path.join(__dirname, '..', '..', 'src', 'diary_md', 'viewer', 'md-viewer-common.js'));
 
 const v = new MarkdownViewerBase('unused');
 const tests = {
